@@ -10,6 +10,7 @@ from light_engine.light_effect import *
 from color import *
 from shows import *
 import rtmidi
+from rain import PygRainScreen
 
 logger = logging.getLogger("global")
 
@@ -19,6 +20,7 @@ curses.noecho()
 stdscr.nodelay(1) # set getch() non-blocking
 
 pixel_adapter = None
+rain_screen = None
 
 def main_loop(window):
     # set up curses window (similar to a regular terminal window except it allows for non-blocking keyboard input)
@@ -28,6 +30,10 @@ def main_loop(window):
     curses_window.addstr("~^~^~Welcome to the Lightful Controller~^~^~\n")
     curses_window.addstr("Setting up program...\n")
     curses_window.refresh()
+
+    global rain_screen
+    rain_screen = PygRainScreen()
+    rain_screen.start_pygame_rain()
 
     # set up logging
     logger.setLevel(logging.DEBUG)
@@ -62,7 +68,7 @@ def main_loop(window):
     pixel_adapter.start()
 
     # great show
-    monitor.register(hanging_door_lights_show.HangingDoorLightsShow(scheduler, pixel_adapter))
+    monitor.register(hanging_door_lights_show.HangingDoorLightsShow(scheduler, pixel_adapter, rain_screen))
 
     # add base layer for scheduler
     base_layer_effect = LightEffectTask(SolidColorLightEffect(color=make_color(0, 35, 50)), LightSection(range(num_notes)), 100000000, pixel_adapter)
@@ -97,8 +103,11 @@ def main_loop(window):
             pixel_adapter.stop()
             monitor.stop()
             exit()
-        elif character == ord('1'):
+        elif character >= ord('1') and character <= ord('9'):
             if isinstance(monitor, VirtualMidiMonitor):
-                monitor.send_virtual_note()
+                monitor.send_virtual_note(offset = character - ord('1'))
+
+        # render loop for rain
+        rain_screen.rain_loop()
 
 curses.wrapper(main_loop)

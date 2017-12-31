@@ -70,7 +70,9 @@ class MidiMonitor:
             self.__observers.remove(observer)
 
 class VirtualMidiMonitor(MidiMonitor):
-    """ Listens to Midi on the virtual port and (TODO) allows for simulating midi events via keyboard events on the curses window """
+    """ Same as MidiMonitor except is also allows for simulating midi events via keyboard events on the curses window """
+    # TODO: since midi input is conveniently exactly the same as if we were receiving from non-virtual, 
+    # we should really just have a separate system for mocking notes out.
     def __init__(self):
         super(VirtualMidiMonitor, self).__init__()
         self.__virtual_midi_out = rtmidi.RtMidiOut()
@@ -80,6 +82,8 @@ class VirtualMidiMonitor(MidiMonitor):
         super(VirtualMidiMonitor, self).start()
         logger.info("VirtualMidiMonitor started... midi in virtual port and midi out virtual port set up")
 
-    def send_virtual_note(self):
-        test_note_on_message = rtmidi.MidiMessage().noteOn(2, 60, 127)
+    def send_virtual_note(self, offset):
+        test_note_on_message = rtmidi.MidiMessage().noteOn(2, 60 + offset, 127)
+        test_note_off_message = rtmidi.MidiMessage().noteOff(2, 60 + offset)
         self.__virtual_midi_out.sendMessage(test_note_on_message)
+        self.__virtual_midi_out.sendMessage(test_note_off_message)
