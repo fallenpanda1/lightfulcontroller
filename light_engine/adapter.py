@@ -66,7 +66,7 @@ class ArduinoPixelAdapter:
         response_string = self.__serial.readline()
 
 class VirtualArduinoClient:
-    """ A local thread that mocks out the behavior of the Arduino (TODO: and possibly actually handles rendering a lights screen??? thanks future Allen!)"""
+    """ A fake arduino client that runs on a separate thread (TODO: and possibly actually handles rendering a lights screen??? thanks future Allen!)"""
     def __init__(self, num_pixels):
 
         # open a pseudoterminal, where master translates to our local serial and slave is the virtual arduino
