@@ -20,7 +20,6 @@ curses.noecho()
 stdscr.nodelay(1) # set getch() non-blocking
 
 pixel_adapter = None
-rain_screen = None
 
 def main_loop(window):
     # set up curses window (similar to a regular terminal window except it allows for non-blocking keyboard input)
@@ -31,9 +30,7 @@ def main_loop(window):
     curses_window.addstr("Setting up program...\n")
     curses_window.refresh()
 
-    global rain_screen
     rain_screen = PygRainScreen()
-    rain_screen.start_pygame_rain()
 
     # set up logging
     logger.setLevel(logging.DEBUG)

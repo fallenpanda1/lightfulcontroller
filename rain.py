@@ -22,8 +22,10 @@ class PygRainScreen:
     def __init__(self):
         self.__updategroup = None
         self.__displaygroup = None
+        self.started = False
 
     def start_pygame_rain(self):
+        self.started = True
         pygame.init()
         self.__screen = pygame.display.set_mode((SCREENX, SCREENY))
         self.__background = pygame.Surface(self.__screen.get_rect().size)
@@ -41,6 +43,8 @@ class PygRainScreen:
         clock = pygame.time.Clock()
 
     def rain_loop(self):
+        if not self.started:
+            return
         for event in pygame.event.get():
             if event.type == QUIT:
                 return
@@ -55,6 +59,8 @@ class PygRainScreen:
         pygame.display.update(self.__displaygroup.draw(self.__screen))
 
     def add_raindrop_note(self, percentage):
+        if not self.started:
+            return
         Drop(int(SCREENX * percentage) + random.randrange(30)) # add some randomness just for fun
 
 
