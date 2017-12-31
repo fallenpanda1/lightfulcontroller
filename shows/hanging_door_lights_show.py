@@ -1,8 +1,8 @@
 import logging
+logger = logging.getLogger("global")
+
 from light_engine.light_effect import *
 from color import *
-
-logger = logging.getLogger("global")
 from rain import PygRainScreen
 
 class HangingDoorLightsShow:
