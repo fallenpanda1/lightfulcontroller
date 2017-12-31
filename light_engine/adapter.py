@@ -1,6 +1,9 @@
 import serial
 from array import array
 import logging
+import os, pty
+import threading
+from time import sleep
 
 logger = logging.getLogger("global")
 
@@ -12,7 +15,9 @@ class ArduinoPixelAdapter:
         self.__pixel_array = array("i", ([0] * num_notes))
 
         self.__serial = serial.Serial(serial_port_id, baud_rate)
-        # wait for waiting message
+
+        # NOTE: the act of setting up serial reboots the remote Arduino, so we want to have the Arduino initiate
+        # contact once it's been fully booted
         waiting = self.__serial.readline()
 
         # TODO: Document controller/arduino protocol here
@@ -61,26 +66,38 @@ class ArduinoPixelAdapter:
         response_string = self.__serial.readline()
         # logger.info("Arduino ACK: " + str(response_string))
 
-class MockAdapter(ArduinoPixelAdapter):
-    def __init__(self, num_notes):
-        # array of pixels, each pixel being represented by an Int32 for R, G, and B (and 8 empty bits on top)
-        self.__pixel_array = array("i", ([0] * num_notes))
+class VirtualArduinoClient:
+    """ A local thread that mocks out the behavior of the Arduino (TODO: and possibly actually handles rendering a lights screen??? thanks future Allen!)"""
+    def __init__(self):
 
-        logger.info("MockAdapter instance created")
+        # open a pseudoterminal, where master translates to our local serial and slave is the virtual arduino
+        self.__master, self.__slave = pty.openpty()
+        os.set_blocking(self.__master, False) # needed to make sure readline() doesn't block when no data comes in
+        self.__serial_reader = os.fdopen(self.__master, "rb")
+        self.__serial_writer = os.fdopen(self.__master, "wb")
+        
+        thread = threading.Thread(target=self.__loop, args=())
+        thread.daemon = True
+        thread.start()
 
-    def start(self):
-        logger.info("start called on MockAdapter")
-        pass
+    def port_id(self):
+        return os.ttyname(self.__slave)
 
-    def stop(self):
-        logger.info("stop called on MockAdapter")
-        pass
+    def __write_to_master(self, string):
+        if string[-1] != '\n':
+            logger.error("serial string is expected to end with a \\n character")
+            return
+        self.__serial_writer.write(string.encode())
+        self.__serial_writer.flush()
 
-    def get_color(self, position):
-        return 0
+    def __loop(self):
+        sleep(0.1) # wait a little while for the adapter to be initialized before beginning setup protocol
+        logger.info("sending message")
+        self.__write_to_master("I'm ready! hit me with some setup calls!\n")
 
-    def set_color(self, position, color):
-        pass
+        while True:
+            line = self.__serial_reader.readline()
+            if line:
+                self.__write_to_master("ACK (cool I got your message, whatever it is!)\n")
 
-    def push_pixels(self):
-        pass
+            sleep(0.01)

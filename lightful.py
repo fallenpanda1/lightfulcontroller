@@ -3,7 +3,7 @@ import argparse
 from midi.midi_monitor import MidiMonitor, VirtualMidiMonitor # TODO: erm, can we simplify this? is that what the __init__ file is for?
 import logging
 from curses_log_handler import CursesLogHandler
-from light_engine.adapter import ArduinoPixelAdapter, MockAdapter
+from light_engine.adapter import ArduinoPixelAdapter, VirtualArduinoClient
 from array import array
 from scheduler.scheduler import *
 from light_engine.light_effect import *
@@ -42,6 +42,7 @@ def main_loop(window):
     # parse command line options
     parser = argparse.ArgumentParser(description="Lightful Piano Controller Script")
     parser.add_argument("--virtualmidi", action='store_true')
+    parser.add_argument("--virtualarduino", action='store_true')
     args = parser.parse_args()
 
     # set up Midi listener
@@ -58,10 +59,13 @@ def main_loop(window):
 
     global pixel_adapter
     num_notes = 100
-    if False:
-        pixel_adapter = ArduinoPixelAdapter(serial_port_id = '/dev/tty.usbmodem1411', baud_rate = 115200, num_notes = num_notes)
-    else:
-        pixel_adapter = MockAdapter(num_notes = num_notes)
+    serial_port_id = '/dev/tty.usbmodem1411' # TODO: hardcoded for now, make configurable later
+    virtual_client = None
+    if args.virtualarduino:
+        logger.info("using virtual arduino")
+        virtual_client = VirtualArduinoClient()
+        serial_port_id = virtual_client.port_id()
+    pixel_adapter = ArduinoPixelAdapter(serial_port_id = serial_port_id, baud_rate = 115200, num_notes = num_notes)
     pixel_adapter.start()
 
     # great show
