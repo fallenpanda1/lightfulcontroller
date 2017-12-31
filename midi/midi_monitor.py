@@ -44,7 +44,7 @@ class MidiMonitor:
         if message.isNoteOn():
             note = MidiNote(message.getNoteNumber(), message.getVelocity())
             self.__note_list[message.getNoteNumber()] = note
-            self.notify_received_note(note)
+            self.__notify_received_note(note)
         elif message.isNoteOff():
             note = self.__note_list[message.getNoteNumber()]
             if note == None:
@@ -57,17 +57,20 @@ class MidiMonitor:
             # midi.getControllerNumber() and midi.getControllerValue()
             # reminder: number = 127? for sustain pedal, value > 0 sustains
 
-    def notify_received_note(self, midi_note):
+    def __notify_received_note(self, midi_note):
         for observer in self.__observers:
             observer.received_note(midi_note)
 
     def register(self, observer):
+        """ Register an observer for handling incoming MIDI events (multiple can be registered) """
         if not observer in self.__observers:
             self.__observers.append(observer)
  
     def unregister(self, observer):
+        """ Unregister an observer """
         if observer in self.__observers:
             self.__observers.remove(observer)
+
 
 class VirtualMidiMonitor(MidiMonitor):
     """ Same as MidiMonitor except is also allows for simulating midi events via keyboard events on the curses window """
