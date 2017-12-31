@@ -3,7 +3,7 @@ from array import array
 import logging
 import os, pty
 import threading
-from time import sleep
+from time import sleep, time
 
 logger = logging.getLogger("global")
 
@@ -64,17 +64,17 @@ class ArduinoPixelAdapter:
 
         # TODO: we can optimize by not waiting for the readline until right before sending the next write message
         response_string = self.__serial.readline()
-        # logger.info("Arduino ACK: " + str(response_string))
 
 class VirtualArduinoClient:
     """ A local thread that mocks out the behavior of the Arduino (TODO: and possibly actually handles rendering a lights screen??? thanks future Allen!)"""
-    def __init__(self):
+    def __init__(self, num_pixels):
 
         # open a pseudoterminal, where master translates to our local serial and slave is the virtual arduino
         self.__master, self.__slave = pty.openpty()
         os.set_blocking(self.__master, False) # needed to make sure readline() doesn't block when no data comes in
         self.__serial_reader = os.fdopen(self.__master, "rb")
         self.__serial_writer = os.fdopen(self.__master, "wb")
+        self.__num_pixels = num_pixels # todo: remove this and determine num_pixels from the protocol itself instead
         
         thread = threading.Thread(target=self.__loop, args=())
         thread.daemon = True
@@ -98,6 +98,11 @@ class VirtualArduinoClient:
         while True:
             line = self.__serial_reader.readline()
             if line:
-                self.__write_to_master("ACK (cool I got your message, whatever it is!)\n")
+                # we should simulate the delay of the Arduino actually setting the neopixels. According to docs:
+                # 'One pixel requires 24 bits (8 bits each for red, green blue) — 30 microseconds.'
+                # https://learn.adafruit.com/adafruit-neopixel-uberguide/advanced-coding
+                sleep(0.000030 * self.__num_pixels)
+
+                self.__write_to_master("got your message, setting neopixels!\n")
 
             sleep(0.01)

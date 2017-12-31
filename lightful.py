@@ -63,7 +63,7 @@ def main_loop(window):
     virtual_client = None
     if args.virtualarduino:
         logger.info("using virtual arduino")
-        virtual_client = VirtualArduinoClient()
+        virtual_client = VirtualArduinoClient(num_pixels = num_pixels)
         serial_port_id = virtual_client.port_id()
     pixel_adapter = ArduinoPixelAdapter(serial_port_id = serial_port_id, baud_rate = 115200, num_pixels = num_pixels)
     pixel_adapter.start()
