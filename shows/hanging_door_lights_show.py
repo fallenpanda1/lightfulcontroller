@@ -15,7 +15,7 @@ class HangingDoorLightsShow:
 
     def received_note(self, midi_note):
         logger.info("received note:" + str(midi_note))
-        offset = midi_note.pitch - 32
+        offset = midi_note.pitch - 30
         if offset >= 30 and offset < 50:
             offset = 79 - offset
         elif offset >= 50:
