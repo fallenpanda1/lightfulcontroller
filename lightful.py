@@ -58,21 +58,21 @@ def main_loop(window):
     # scheduler.add(DebugTask()) # debug code
 
     global pixel_adapter
-    num_notes = 100
+    num_pixels = 100
     serial_port_id = '/dev/tty.usbmodem1411' # TODO: hardcoded for now, make configurable later
     virtual_client = None
     if args.virtualarduino:
         logger.info("using virtual arduino")
         virtual_client = VirtualArduinoClient()
         serial_port_id = virtual_client.port_id()
-    pixel_adapter = ArduinoPixelAdapter(serial_port_id = serial_port_id, baud_rate = 115200, num_notes = num_notes)
+    pixel_adapter = ArduinoPixelAdapter(serial_port_id = serial_port_id, baud_rate = 115200, num_pixels = num_pixels)
     pixel_adapter.start()
 
     # great show
     monitor.register(hanging_door_lights_show.HangingDoorLightsShow(scheduler, pixel_adapter, rain_screen))
 
     # add base layer for scheduler
-    base_layer_effect = LightEffectTask(SolidColorLightEffect(color=make_color(0, 35, 50)), LightSection(range(num_notes)), 100000000, pixel_adapter)
+    base_layer_effect = LightEffectTask(SolidColorLightEffect(color=make_color(0, 35, 50)), LightSection(range(num_pixels)), 100000000, pixel_adapter)
     scheduler.add(base_layer_effect)
 
     curses_window.addstr("\nDone setting up\n\n")

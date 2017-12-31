@@ -9,10 +9,10 @@ logger = logging.getLogger("global")
 
 class ArduinoPixelAdapter:
     """simple interface for setting NeoPixel lights via Arduino"""
-    def __init__(self, serial_port_id, baud_rate, num_notes):
+    def __init__(self, serial_port_id, baud_rate, num_pixels):
 
         # array of pixels, each pixel being represented by an Int32 for R, G, and B (and 8 empty bits on top)
-        self.__pixel_array = array("i", ([0] * num_notes))
+        self.__pixel_array = array("i", ([0] * num_pixels))
 
         self.__serial = serial.Serial(serial_port_id, baud_rate)
 
@@ -24,8 +24,8 @@ class ArduinoPixelAdapter:
         # TODO: Check that it's a specific message?
         logger.info("log 'setup' message: " + str(waiting))
 
-        logger.info("stuff" + str(num_notes))
-        self.__serial.write(num_notes.to_bytes(1, byteorder='little'))
+        logger.info("stuff" + str(num_pixels))
+        self.__serial.write(num_pixels.to_bytes(1, byteorder='little'))
 
         # wait for next line
         ready = self.__serial.readline()
