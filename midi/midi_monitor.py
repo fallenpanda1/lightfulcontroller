@@ -53,6 +53,7 @@ class MidiMonitor:
                 logger.error("note off message received for a note that was never turned on")
             note.velocity = 0
             self.__note_list[message.getNoteNumber()] = None
+            self.__notify_received_note(note)
         elif message.isController():
             if message.getControllerNumber() == 64: # sustain pedal
                 value = message.getControllerValue() # 0 - 127 depending on how hard pedal is pressed

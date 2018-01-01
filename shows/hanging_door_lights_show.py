@@ -15,6 +15,9 @@ class HangingDoorLightsShow:
         self.__rain_screen.start_pygame_rain()
 
     def received_note(self, midi_note):
+        if midi_note.velocity == 0:
+            return # don't need to handle not off events
+        
         logger.info("received note:" + str(midi_note))
         offset = midi_note.pitch - 30
         if offset >= 30 and offset < 50:
