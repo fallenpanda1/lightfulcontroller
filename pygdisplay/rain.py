@@ -1,34 +1,28 @@
-#! /usr/bin/env python
-
-# This code is adapted from the following example:
-# scriptedfun.com
-# Rain Demo
-# MIT License
-
 import pygame, random
 from pygame.locals import *
+from pygdisplay.screen import PygScreen
 
 CHANCE = 0.5
-SCREENX = 640
-SCREENY = 480
+SCREENX = 800
+SCREENY = 600
 ACCELERATION = 0.2
 DROPSIZE = (3, 3)
 COLORSTART = 255
 COLOREND = 0
 COLORSBETWEEN = 10
 
-class PygRainScreen:
+class RainPygDrawable:
 
     def __init__(self):
         self.__updategroup = None
         self.__displaygroup = None
         self.started = False
 
-    def start_pygame_rain(self):
+    def start(self):
         self.started = True
-        pygame.init()
         self.__screen = pygame.display.set_mode((SCREENX, SCREENY))
         self.__background = pygame.Surface(self.__screen.get_rect().size)
+        self.__background.fill((0, 0, 0))
 
         self.__updategroup = pygame.sprite.Group()
         self.__displaygroup = pygame.sprite.RenderUpdates()
@@ -40,9 +34,7 @@ class PygRainScreen:
             thing.updategroup = self.__updategroup
             thing.displaygroup = self.__displaygroup
 
-        clock = pygame.time.Clock()
-
-    def rain_loop(self):
+    def draw_loop(self):
         if not self.started:
             return
         for event in pygame.event.get():

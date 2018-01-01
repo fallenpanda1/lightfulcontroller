@@ -3,21 +3,22 @@ logger = logging.getLogger("global")
 
 from light_engine.light_effect import *
 from color import *
-from rain import PygRainScreen
+from pygdisplay.screen import PygScreen
+from pygdisplay.rain import RainPygDrawable
 
 class HangingDoorLightsShow:
     """Just for debugging"""
 
-    def __init__(self, scheduler, pixel_adapter, rain_screen):
+    def __init__(self, scheduler, pixel_adapter, pygscreen):
         self.__scheduler = scheduler
         self.__pixel_adapter = pixel_adapter
-        self.__rain_screen = rain_screen
-        self.__rain_screen.start_pygame_rain()
+        self.__rain_drawable = RainPygDrawable()
+        pygscreen.display_with_drawable(self.__rain_drawable)
 
     def received_note(self, midi_note):
         if midi_note.velocity == 0:
             return # don't need to handle not off events
-        
+
         logger.info("received note:" + str(midi_note))
         offset = midi_note.pitch - 30
         if offset >= 30 and offset < 50:
@@ -26,5 +27,5 @@ class HangingDoorLightsShow:
             offset += 10
         simple_on_effect_task = MidiOffLightEffectTask(SolidColorLightEffect(color=make_color(220, 200, 60)), LightSection([offset]), 0.6, self.__pixel_adapter, midi_note)
         self.__scheduler.add(simple_on_effect_task)
-        if self.__rain_screen != None:
-            self.__rain_screen.add_raindrop_note(1.0 * (midi_note.pitch % 10) / 10)
+        if self.__rain_drawable != None:
+            self.__rain_drawable.add_raindrop_note(1.0 * (midi_note.pitch % 10) / 10)

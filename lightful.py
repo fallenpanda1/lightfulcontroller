@@ -11,7 +11,7 @@ from light_engine.light_effect import *
 from color import *
 from shows import *
 import rtmidi
-from rain import PygRainScreen
+from pygdisplay.screen import PygScreen
 
 logger = logging.getLogger("global")
 
@@ -31,7 +31,7 @@ def main_loop(window):
     curses_window.addstr("Setting up program...\n")
     curses_window.refresh()
 
-    rain_screen = PygRainScreen()
+    pygscreen = PygScreen()
 
     # set up logging
     logger.setLevel(logging.DEBUG)
@@ -67,7 +67,7 @@ def main_loop(window):
     pixel_adapter.start()
 
     # great show
-    monitor.register(hanging_door_lights_show.HangingDoorLightsShow(scheduler, pixel_adapter, rain_screen))
+    monitor.register(hanging_door_lights_show.HangingDoorLightsShow(scheduler, pixel_adapter, pygscreen))
 
     # add base layer for scheduler
     base_layer_effect = LightEffectTask(SolidColorLightEffect(color=make_color(0, 35, 50)), LightSection(range(num_pixels)), 100000000, pixel_adapter)
@@ -125,6 +125,6 @@ def main_loop(window):
             midi_player.play()
 
         # render loop for rain
-        rain_screen.rain_loop()
+        pygscreen.draw_loop()
 
 curses.wrapper(main_loop)
