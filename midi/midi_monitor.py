@@ -64,10 +64,6 @@ class MidiMonitor:
                     self.__notify_sustain_pedal_event(False)
                     self.__is_sustain_pedal_active = False
 
-            pass
-            # midi.getControllerNumber() and midi.getControllerValue()
-            # reminder: number = 127? for sustain pedal, value > 0 sustains
-
     def __notify_received_note(self, midi_note):
         for observer in self.__observers:
             observer.received_note(midi_note)
