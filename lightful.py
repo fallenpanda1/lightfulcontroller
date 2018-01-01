@@ -1,6 +1,7 @@
 import curses
 import argparse
-from midi.midi_monitor import MidiMonitor, VirtualMidiMonitor # TODO: erm, can we simplify this? is that what the __init__ file is for?
+from midi.midi_monitor import MidiMonitor # TODO: erm, can we simplify this? is that what the __init__ file is for?
+from midi.midi_fileio import MidiRecorder, MidiPlayer
 import logging
 from curses_log_handler import CursesLogHandler
 from light_engine.adapter import ArduinoPixelAdapter, VirtualArduinoClient
@@ -41,14 +42,11 @@ def main_loop(window):
 
     # parse command line options
     parser = argparse.ArgumentParser(description="Lightful Piano Controller Script")
-    parser.add_argument("--virtualmidi", action='store_true')
     parser.add_argument("--virtualarduino", action='store_true')
     args = parser.parse_args()
 
     # set up Midi listener
     monitor = MidiMonitor()
-    if args.virtualmidi:
-        monitor = VirtualMidiMonitor()
     monitor.start()
 
     # set up scheduler for animations, effects, etc.
@@ -79,10 +77,19 @@ def main_loop(window):
     curses_window.addstr("Keyboard Shortcuts:\n")
     curses_window.addstr("(c)lose serial connection\n")
     curses_window.addstr("(o)pen serial connection\n")
+    curses_window.addstr("(r)ecord MIDI input to a save file, or stop and save recording if recording in progress\n")
+    curses_window.addstr("(p)lay saved MIDI recording\n")
     curses_window.addstr("(q)uit\n\n")
     curses_window.refresh()
 
+    midi_recorder = None
+    midi_player = None
+
     while True:
+        # play any pending notes from the local midi player
+        if midi_player is not None:
+            midi_player.play_loop()
+
         # listen for any new midi input
         monitor.listen_loop()
 
@@ -104,9 +111,18 @@ def main_loop(window):
             pixel_adapter.stop()
             monitor.stop()
             exit()
+        elif character == ord('r'):
+            if midi_recorder == None:
+                midi_recorder = MidiRecorder("recording1.mid", monitor)
+                midi_recorder.start()
+            else:
+                midi_recorder.stop() # TODO: maybe fork into cancel vs save?
+                midi_recorder = None
         elif character >= ord('1') and character <= ord('9'):
-            if isinstance(monitor, VirtualMidiMonitor):
-                monitor.send_virtual_note(offset = character - ord('1'))
+            monitor.send_virtual_note(offset = character - ord('1'))
+        elif character == ord('p'):
+            midi_player = MidiPlayer("recording1.mid", monitor)
+            midi_player.play()
 
         # render loop for rain
         rain_screen.rain_loop()

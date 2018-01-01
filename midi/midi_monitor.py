@@ -24,9 +24,14 @@ class MidiMonitor:
     def start(self):
         ports = range(self._midi_in.getPortCount())
         
+        # also open a virtual midi out port so we can send MIDI messages to ourselves
+        # TODO: Check if this clashes with a real input MIDI port, or if we need two different input ports (likely)
+        self.__virtual_midi_out = rtmidi.RtMidiOut()
+        self.__virtual_midi_out.openVirtualPort()
+
         if not ports:
-            logger.error('no midi input ports found')
-            return # TODO: throw an error that this can't be started?
+            logger.error('no midi input ports found, did not open MIDI connection')
+            #return # TODO: throw an error that this can't be started?
         self._midi_in.openPort(0)
         logger.info("MidiMonitor started... now listening for midi in on port 0: " + self._midi_in.getPortName(0))
 
@@ -40,6 +45,10 @@ class MidiMonitor:
             if message is None:
                 return
             self.handle_midi_message(message)
+
+    def send_midi_message(self, rtmidi_message):
+        """ Send a MIDI message """
+        self.__virtual_midi_out.sendMessage(rtmidi_message)
 
     def handle_midi_message(self, message):
         if message.isNoteOn():
@@ -84,22 +93,9 @@ class MidiMonitor:
         if observer in self.__observers:
             self.__observers.remove(observer)
 
-
-class VirtualMidiMonitor(MidiMonitor):
-    """ Same as MidiMonitor except is also allows for simulating midi events via keyboard events on the curses window """
-    # TODO: since midi input is conveniently exactly the same as if we were receiving from non-virtual, 
-    # we should really just have a separate system for mocking notes out.
-    def __init__(self):
-        super(VirtualMidiMonitor, self).__init__()
-        self.__virtual_midi_out = rtmidi.RtMidiOut()
-
-    def start(self):
-        self.__virtual_midi_out.openVirtualPort()
-        super(VirtualMidiMonitor, self).start()
-        logger.info("VirtualMidiMonitor started... midi in virtual port and midi out virtual port set up")
-
     def send_virtual_note(self, offset):
-        test_note_on_message = rtmidi.MidiMessage().noteOn(2, 60 + offset, 127)
-        test_note_off_message = rtmidi.MidiMessage().noteOff(2, 60 + offset)
+        # TODO: refactor to use send_midi_message
+        test_note_on_message = rtmidi.MidiMessage().noteOn(0, 60 + offset, 127)
+        test_note_off_message = rtmidi.MidiMessage().noteOff(0, 60 + offset)
         self.__virtual_midi_out.sendMessage(test_note_on_message)
         self.__virtual_midi_out.sendMessage(test_note_off_message)
