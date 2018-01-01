@@ -19,6 +19,7 @@ class MidiMonitor:
         self.__note_list = [0] * self.__MAX_PITCH 
         self.__observers = []
         self._midi_in = rtmidi.RtMidiIn()
+        self.__is_sustain_pedal_active = False
 
     def start(self):
         ports = range(self._midi_in.getPortCount())
@@ -53,6 +54,15 @@ class MidiMonitor:
             note.velocity = 0
             self.__note_list[message.getNoteNumber()] = None
         elif message.isController():
+            if message.getControllerNumber() == 64: # sustain pedal
+                value = message.getControllerValue() # 0 - 127 depending on how hard pedal is pressed
+                if value > 0 and not self.__is_sustain_pedal_active:
+                    self.__notify_sustain_pedal_event(True)
+                    self.__is_sustain_pedal_active = True
+                elif value == 0 and self.__is_sustain_pedal_active:
+                    self.__notify_sustain_pedal_event(False)
+                    self.__is_sustain_pedal_active = False
+
             pass
             # midi.getControllerNumber() and midi.getControllerValue()
             # reminder: number = 127? for sustain pedal, value > 0 sustains
@@ -60,6 +70,12 @@ class MidiMonitor:
     def __notify_received_note(self, midi_note):
         for observer in self.__observers:
             observer.received_note(midi_note)
+
+    def __notify_sustain_pedal_event(self, is_pedal_on):
+        for observer in self.__observers:
+            sustain_event_attr = getattr(observer, "received_sustain_pedal_event", None)
+            if callable(sustain_event_attr):
+                observer.received_sustain_pedal_event(is_pedal_on)
 
     def register(self, observer):
         """ Register an observer for handling incoming MIDI events (multiple can be registered) """
