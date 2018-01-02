@@ -24,15 +24,20 @@ class MidiMonitor:
     def start(self):
         ports = range(self._midi_in.getPortCount())
         
-        # also open a virtual midi out port so we can send MIDI messages to ourselves
-        # TODO: Check if this clashes with a real input MIDI port, or if we need two different input ports (likely)
-        self.__virtual_midi_out = rtmidi.RtMidiOut()
-        self.__virtual_midi_out.openVirtualPort()
+        # lets us send midi messages to the piano
+        self.__midi_out = rtmidi.RtMidiOut()
+        try:
+            self.__midi_out.openPort(0)
+        except:
+            pass
 
         if not ports:
             logger.error('no midi input ports found, did not open MIDI connection')
             #return # TODO: throw an error that this can't be started?
-        self._midi_in.openPort(0)
+        try:
+            self._midi_in.openPort(0)
+        except:
+            pass
         logger.info("MidiMonitor started... now listening for midi in on port 0: " + self._midi_in.getPortName(0))
 
     def stop(self):
@@ -48,7 +53,8 @@ class MidiMonitor:
 
     def send_midi_message(self, rtmidi_message):
         """ Send a MIDI message """
-        self.__virtual_midi_out.sendMessage(rtmidi_message)
+        self.__midi_out.sendMessage(rtmidi_message)
+        self.handle_midi_message(rtmidi_message)
 
     def handle_midi_message(self, message):
         if message.isNoteOn():
@@ -97,5 +103,5 @@ class MidiMonitor:
         # TODO: refactor to use send_midi_message
         test_note_on_message = rtmidi.MidiMessage().noteOn(0, 30 + offset, 127)
         test_note_off_message = rtmidi.MidiMessage().noteOff(0, 30 + offset)
-        self.__virtual_midi_out.sendMessage(test_note_on_message)
-        self.__virtual_midi_out.sendMessage(test_note_off_message)
+        self.handle_midi_message(test_note_on_message)
+        self.handle_midi_message(test_note_off_message)
