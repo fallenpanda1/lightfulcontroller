@@ -1,6 +1,8 @@
 import pygame, random
 from pygame.locals import *
 from pygdisplay.screen import PygScreen
+import logging
+logger = logging.getLogger("global")
 
 CHANCE = 0.5
 SCREENX = 800
@@ -16,10 +18,8 @@ class RainPygDrawable:
     def __init__(self):
         self.__updategroup = None
         self.__displaygroup = None
-        self.started = False
 
     def start(self):
-        self.started = True
         self.__screen = pygame.display.set_mode((SCREENX, SCREENY))
         self.__background = pygame.Surface(self.__screen.get_rect().size)
         self.__background.fill((0, 0, 0))
@@ -35,8 +35,6 @@ class RainPygDrawable:
             thing.displaygroup = self.__displaygroup
 
     def draw_loop(self):
-        if not self.started:
-            return
         for event in pygame.event.get():
             if event.type == QUIT:
                 return
@@ -51,8 +49,6 @@ class RainPygDrawable:
         pygame.display.update(self.__displaygroup.draw(self.__screen))
 
     def add_raindrop_note(self, percentage):
-        if not self.started:
-            return
         Drop(int(SCREENX * percentage) + random.randrange(30)) # add some randomness just for fun
 
 
