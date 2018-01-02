@@ -5,6 +5,7 @@ from light_engine.light_effect import *
 from color import *
 from pygdisplay.screen import PygScreen
 from pygdisplay.rain import RainPygDrawable
+from pygdisplay.neopixel import NeopixelSimulationPygDrawable
 
 class HangingDoorLightsShow:
     """Just for debugging"""
@@ -12,8 +13,9 @@ class HangingDoorLightsShow:
     def __init__(self, scheduler, pixel_adapter, pygscreen):
         self.__scheduler = scheduler
         self.__pixel_adapter = pixel_adapter
-        self.__rain_drawable = RainPygDrawable()
-        pygscreen.display_with_drawable(self.__rain_drawable)
+        self.__rain_drawable = None# RainPygDrawable()
+        # self.__neopixel_drawable = NeopixelSimulationPygDrawable()
+        # pygscreen.display_with_drawable(self.__neopixel_drawable)
 
     def received_note(self, midi_note):
         if midi_note.velocity == 0:

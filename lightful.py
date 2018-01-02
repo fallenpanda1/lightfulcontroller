@@ -66,8 +66,14 @@ def main_loop(window):
     pixel_adapter = ArduinoPixelAdapter(serial_port_id = serial_port_id, baud_rate = 115200, num_pixels = num_pixels)
     pixel_adapter.start()
 
-    # great show
-    monitor.register(hanging_door_lights_show.HangingDoorLightsShow(scheduler, pixel_adapter, pygscreen))
+    # create show
+    lights_show = hanging_door_lights_show.HangingDoorLightsShow(scheduler, pixel_adapter, pygscreen)
+    monitor.register(lights_show)
+
+    # TODO: maybe have a protocol a light show can implement to describe its simulation layout
+    if virtual_client is not None:
+        # configure neopixel simulator with light show's data
+        virtual_client.begin_pygscreen_simulation(pygscreen, lights_show)
 
     # add base layer for scheduler
     base_layer_effect = LightEffectTask(SolidColorLightEffect(color=make_color(0, 35, 50)), LightSection(range(num_pixels)), 100000000, pixel_adapter)

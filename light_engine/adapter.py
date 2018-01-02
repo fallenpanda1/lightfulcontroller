@@ -4,6 +4,8 @@ import logging
 import os, pty
 import threading
 from time import sleep, time
+from pygdisplay.neopixel import NeopixelSimulationPygDrawable
+from color import *
 
 logger = logging.getLogger("global")
 
@@ -75,10 +77,17 @@ class VirtualArduinoClient:
         self.__serial_reader = os.fdopen(self.__master, "rb")
         self.__serial_writer = os.fdopen(self.__master, "wb")
         self.__num_pixels = num_pixels # todo: remove this and determine num_pixels from the protocol itself instead
-        
+        self.__neopixel_drawable = None
+        self.__lights_show = None
+
         thread = threading.Thread(target=self.__loop, args=())
         thread.daemon = True
         thread.start()
+
+    def begin_pygscreen_simulation(self, pygscreen, lights_show):
+        self.__neopixel_drawable = NeopixelSimulationPygDrawable()
+        pygscreen.display_with_drawable(self.__neopixel_drawable)
+        self.__lights_show = lights_show
 
     def port_id(self):
         return os.ttyname(self.__slave)
@@ -95,6 +104,7 @@ class VirtualArduinoClient:
         logger.info("sending message")
         self.__write_to_master("I'm ready! hit me with some setup calls!\n")
 
+        setup_complete = False
         while True:
             line = self.__serial_reader.readline()
             if line:
@@ -103,6 +113,17 @@ class VirtualArduinoClient:
                 # https://learn.adafruit.com/adafruit-neopixel-uberguide/advanced-coding
                 sleep(0.000030 * self.__num_pixels)
 
-                self.__write_to_master("got your message, setting neopixels!\n")
+                # TODO: wait for expected # of lines, then convert to a color array
+                #self.__neopixel_drawable()
+                if setup_complete == True:
+                    color_array = []
+                    for i in range(int(len(line) / 4)):
+                        i = i * 4
+                        color_array.append((line[i], line[i+1], line[i+2], line[i+3]))
+
+                    self.__neopixel_drawable.update_with_colors(color_array)
+
+                self.__write_to_master("got your message!\n")
+                setup_complete = True
 
             sleep(0.01)

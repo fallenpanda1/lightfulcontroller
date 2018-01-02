@@ -95,7 +95,7 @@ class MidiMonitor:
 
     def send_virtual_note(self, offset):
         # TODO: refactor to use send_midi_message
-        test_note_on_message = rtmidi.MidiMessage().noteOn(0, 60 + offset, 127)
-        test_note_off_message = rtmidi.MidiMessage().noteOff(0, 60 + offset)
+        test_note_on_message = rtmidi.MidiMessage().noteOn(0, 30 + offset, 127)
+        test_note_off_message = rtmidi.MidiMessage().noteOff(0, 30 + offset)
         self.__virtual_midi_out.sendMessage(test_note_on_message)
         self.__virtual_midi_out.sendMessage(test_note_off_message)
