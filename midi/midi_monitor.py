@@ -58,6 +58,13 @@ class MidiMonitor:
 
     def handle_midi_message(self, message):
         if message.isNoteOn():
+            existing_note = self.__note_list[message.getNoteNumber()]
+            if existing_note is not None and existing_note is not 0:
+                # edge case where recorded MIDI and live MIDI play the same key at the same time.
+                # in this case edit the existing note so animations on the old note end correctly.
+                existing_note.velocity = message.getVelocity()
+                return
+
             note = MidiNote(message.getNoteNumber(), message.getVelocity())
             self.__note_list[message.getNoteNumber()] = note
             self.__notify_received_note(note)
@@ -66,6 +73,7 @@ class MidiMonitor:
             if note == None:
                 # throw an "error" once I figure out how to even do that :D
                 logger.error("note off message received for a note that was never turned on")
+                return
             note.velocity = 0
             self.__note_list[message.getNoteNumber()] = None
             self.__notify_received_note(note)
