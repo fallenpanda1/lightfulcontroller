@@ -11,6 +11,8 @@ BACKGROUNDCOLOR = (255, 255, 255)
 INACTIVECOLOR = (100, 100, 100)
 ACTIVECOLOR = (0, 0, 255)
 
+RADIUS_MULTIPLIER = 0.8
+
 class NeopixelSimulationPygDrawable:
     # TODO: make me happen!
     def __init__(self):
@@ -23,7 +25,7 @@ class NeopixelSimulationPygDrawable:
         screen.blit(background, (0, 0))
         self.__screen = screen
         
-        self.__group, self.__surface = self.setup_lights_for_section(section_length=10)
+        self.__group, self.__surface = self.setup_lights_for_section(section_length=30)
 
     def draw_loop(self):
         for event in pygame.event.get():
@@ -57,7 +59,7 @@ class NeopixelSimulationPygDrawable:
          """
 
         # calculate radius based on screen height
-        light_radius = int(SCREENHEIGHT / (section_length * 4))
+        light_radius = int(SCREENHEIGHT / (section_length * 2))
         light_diameter = light_radius * 2
         section_surface = pygame.Surface((light_diameter, SCREENHEIGHT))
         section_surface.fill(BACKGROUNDCOLOR)
@@ -65,7 +67,7 @@ class NeopixelSimulationPygDrawable:
 
         for i in range(section_length):    
             circle = Circle(radius=light_radius)
-            circle.rect.center = (light_radius, light_radius + (i * light_diameter * 2))
+            circle.rect.center = (light_radius, light_radius + (i * light_diameter))
             circle.add(section_group)
 
         return (section_group, section_surface)
@@ -73,7 +75,7 @@ class NeopixelSimulationPygDrawable:
 class Circle(pygame.sprite.Sprite):
     def __init__(self, radius):
         pygame.sprite.Sprite.__init__(self)
-        self.radius = radius
+        self.radius = int(radius * RADIUS_MULTIPLIER)
         self.image = pygame.Surface((radius * 2, radius * 2))
         self.image.fill(BACKGROUNDCOLOR)
         self.update_color(INACTIVECOLOR)
