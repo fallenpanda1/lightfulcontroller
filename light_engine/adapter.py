@@ -13,6 +13,8 @@ class ArduinoPixelAdapter:
     """simple interface for setting NeoPixel lights via Arduino"""
     def __init__(self, serial_port_id, baud_rate, num_pixels):
 
+        self.num_pixels = num_pixels
+
         # array of pixels, each pixel being represented by an Int32 for R, G, and B (and 8 empty bits on top)
         self.__pixel_array = array("i", ([0] * num_pixels))
 
