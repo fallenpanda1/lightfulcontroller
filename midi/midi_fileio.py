@@ -94,9 +94,6 @@ class MidiRecorder:
             self.__track.append(Message('control_change', control=64, value=0, time=self.current_delta()))
 
     def current_delta(self):
-        if self.__last_message_time == None:
-            self.__last_message_time = time()
-
         current_time = time()
         delta_seconds = current_time - self.__last_message_time
         delta_ticks = self.second2tick(delta_seconds, ticks_per_beat=self.__midi_file.ticks_per_beat, tempo=self.__tempo)
