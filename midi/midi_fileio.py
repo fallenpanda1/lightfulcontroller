@@ -50,7 +50,7 @@ class MidiRecorder:
         self.file_name = file_name
         self.__midi_monitor = midi_monitor
         self.__recorded_notes = []
-        self.__midi_file = MidiFile(ticks_per_beat=50)
+        self.__midi_file = MidiFile(ticks_per_beat=960)
         self.__tempo = 500000
         
         # add track
@@ -112,4 +112,3 @@ def seconds2ticks(second, ticks_per_beat, tempo):
     """
     scale = tempo * 1e-6 / ticks_per_beat
     return int(second / scale)
-    return delta_ticks

@@ -1,5 +1,6 @@
 import rtmidi
 import logging
+import time
 
 logger = logging.getLogger("global")
 
@@ -18,11 +19,11 @@ class MidiMonitor:
         self.__MAX_PITCH = 255
         self.__note_list = [0] * self.__MAX_PITCH 
         self.__observers = []
-        self._midi_in = rtmidi.RtMidiIn()
+        self.__midi_in = rtmidi.RtMidiIn()
         self.__is_sustain_pedal_active = False
 
     def start(self):
-        ports = range(self._midi_in.getPortCount())
+        ports = range(self.__midi_in.getPortCount())
         
         # lets us send midi messages to the piano
         self.__midi_out = rtmidi.RtMidiOut()
@@ -35,21 +36,30 @@ class MidiMonitor:
             logger.error('no midi input ports found, did not open MIDI connection')
             #return # TODO: throw an error that this can't be started?
         try:
-            self._midi_in.openPort(0)
+            self.__midi_in.openPort(0)
+            self.__midi_in.ignoreTypes(False, False, True)
         except:
             pass
-        logger.info("MidiMonitor started... now listening for midi in on port 0: " + self._midi_in.getPortName(0))
+        logger.info("MidiMonitor started... now listening for midi in on port 0: " + self.__midi_in.getPortName(0))
+        self.__lastmessagetime = 0
+        self.__hasrecordedfirstmessage = False
 
     def stop(self):
-        self._midi_in.closePort()
+        self.__midi_in.closePort()
 
     def listen_loop(self):
         # process all waiting midi input
         while True:
-            message = self._midi_in.getMessage(0) # some timeout in ms
+            message = self.__midi_in.getMessage(0) # some timeout in ms
             if message is None:
                 return
-            self.handle_midi_message(message)
+
+            if self.__hasrecordedfirstmessage:
+                self.__lastmessagetime += message.getTimeStamp()
+
+            if self.handle_midi_message(message):
+                self.__lastmessagetime = 0
+                self.__hasrecordedfirstmessage = True # hack to solve weird delay for first midi note. TODO: remove this hack and see what's causing the huge delay
 
     def send_midi_message(self, rtmidi_message):
         """ Send a MIDI message """
@@ -63,39 +73,43 @@ class MidiMonitor:
                 # edge case where recorded MIDI and live MIDI play the same key at the same time.
                 # in this case edit the existing note so animations on the old note end correctly.
                 existing_note.velocity = message.getVelocity()
-                return
+                return True
 
             note = MidiNote(message.getNoteNumber(), message.getVelocity())
             self.__note_list[message.getNoteNumber()] = note
             self.__notify_received_note(note)
+            return True
         elif message.isNoteOff():
             note = self.__note_list[message.getNoteNumber()]
             if note == None:
                 # throw an "error" once I figure out how to even do that :D
                 logger.error("note off message received for a note that was never turned on")
-                return
+                return True
             note.velocity = 0
             self.__note_list[message.getNoteNumber()] = None
             self.__notify_received_note(note)
+            return True
         elif message.isController():
             if message.getControllerNumber() == 64: # sustain pedal
                 value = message.getControllerValue() # 0 - 127 depending on how hard pedal is pressed
                 if value > 0 and not self.__is_sustain_pedal_active:
-                    self.__notify_sustain_pedal_event(True, deltatime)
+                    self.__notify_sustain_pedal_event(True)
                     self.__is_sustain_pedal_active = True
                 elif value == 0 and self.__is_sustain_pedal_active:
-                    self.__notify_sustain_pedal_event(False, deltatime)
+                    self.__notify_sustain_pedal_event(False)
                     self.__is_sustain_pedal_active = False
+                return True
+            return False
 
-    def __notify_received_note(self, midi_note, deltatime):
+    def __notify_received_note(self, midi_note):
         for observer in self.__observers:
-            observer.received_note(midi_note, deltatime)
+            observer.received_note(midi_note, self.__lastmessagetime)
 
-    def __notify_sustain_pedal_event(self, is_pedal_on, deltatime):
+    def __notify_sustain_pedal_event(self, is_pedal_on):
         for observer in self.__observers:
             sustain_event_attr = getattr(observer, "received_sustain_pedal_event", None)
             if callable(sustain_event_attr):
-                observer.received_sustain_pedal_event(is_pedal_on, deltatime)
+                observer.received_sustain_pedal_event(is_pedal_on, self.__lastmessagetime)
 
     def register(self, observer):
         """ Register an observer for handling incoming MIDI events (multiple can be registered) """
