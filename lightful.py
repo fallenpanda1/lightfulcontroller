@@ -53,8 +53,7 @@ def main_loop(window):
     scheduler = Scheduler()
     scheduler.start()
 
-    # scheduler.add(DebugTask()) # debug code
-
+    # set up and connect to NeoPixel adapter (or local virtual simulator)
     global pixel_adapter
     num_pixels = 100
     serial_port_id = '/dev/tty.usbmodem1411' # TODO: hardcoded for now, make configurable later
@@ -74,10 +73,6 @@ def main_loop(window):
     if virtual_client is not None:
         # configure neopixel simulator with light show's data
         virtual_client.begin_pygscreen_simulation(pygscreen, lights_show)
-
-    # add base layer for scheduler
-    base_layer_effect = LightEffectTask(SolidColorLightEffect(color=make_color(0, 35, 50)), LightSection(range(num_pixels)), 100000000, pixel_adapter)
-    scheduler.add(base_layer_effect)
 
     curses_window.addstr("\nDone setting up\n\n")
     curses_window.addstr("Keyboard Shortcuts:\n")

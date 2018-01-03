@@ -53,6 +53,10 @@ class HangingDoorLightsShow:
 
         self.mappers = [base_mapper, melody1_mapper]
 
+        # add base layer for scheduler
+        base_layer_effect = LightEffectTask(SolidColorLightEffect(color=make_color(0, 35, 50)), self.all, 100000000, pixel_adapter)
+        scheduler.add(base_layer_effect)
+
     def received_note(self, midi_note):
         if midi_note.velocity == 0:
             return # don't need to handle not off events
