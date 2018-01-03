@@ -81,21 +81,21 @@ class MidiMonitor:
             if message.getControllerNumber() == 64: # sustain pedal
                 value = message.getControllerValue() # 0 - 127 depending on how hard pedal is pressed
                 if value > 0 and not self.__is_sustain_pedal_active:
-                    self.__notify_sustain_pedal_event(True)
+                    self.__notify_sustain_pedal_event(True, deltatime)
                     self.__is_sustain_pedal_active = True
                 elif value == 0 and self.__is_sustain_pedal_active:
-                    self.__notify_sustain_pedal_event(False)
+                    self.__notify_sustain_pedal_event(False, deltatime)
                     self.__is_sustain_pedal_active = False
 
-    def __notify_received_note(self, midi_note):
+    def __notify_received_note(self, midi_note, deltatime):
         for observer in self.__observers:
-            observer.received_note(midi_note)
+            observer.received_note(midi_note, deltatime)
 
-    def __notify_sustain_pedal_event(self, is_pedal_on):
+    def __notify_sustain_pedal_event(self, is_pedal_on, deltatime):
         for observer in self.__observers:
             sustain_event_attr = getattr(observer, "received_sustain_pedal_event", None)
             if callable(sustain_event_attr):
-                observer.received_sustain_pedal_event(is_pedal_on)
+                observer.received_sustain_pedal_event(is_pedal_on, deltatime)
 
     def register(self, observer):
         """ Register an observer for handling incoming MIDI events (multiple can be registered) """

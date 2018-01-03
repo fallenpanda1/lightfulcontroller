@@ -66,7 +66,7 @@ class HangingDoorLightsShow:
         base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 50, 35)), self.row4, 5, pixel_adapter))
         scheduler.add(base_layer_effect)
 
-    def received_note(self, midi_note):
+    def received_note(self, midi_note, time):
         if midi_note.velocity == 0:
             return # don't need to handle not off events
 

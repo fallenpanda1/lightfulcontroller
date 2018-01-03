@@ -77,21 +77,21 @@ class MidiRecorder:
         self.__recorded_notes = []
         self.__last_message_time = None
 
-    def received_note(self, midi_note):
-        logger.info(midi_note)
+    def received_note(self, midi_note, time):
+        logger.info(str(midi_note) + " with delta: " + str(time))
         
         if midi_note.velocity > 0:
-            self.__track.append(Message('note_on', note=midi_note.pitch, velocity=midi_note.velocity, time=self.current_delta()))
+            self.__track.append(Message('note_on', note=midi_note.pitch, velocity=midi_note.velocity, time=self.seconds2ticks(time)))
         else:
-            self.__track.append(Message('note_on', note=midi_note.pitch, velocity=0, time=self.current_delta()))
+            self.__track.append(Message('note_on', note=midi_note.pitch, velocity=0, time=self.seconds2ticks(time)))
 
-    def received_sustain_pedal_event(self, is_pedal_on):
+    def received_sustain_pedal_event(self, is_pedal_on, time):
         if is_pedal_on:
             logger.info("pedal on")
-            self.__track.append(Message('control_change', control=64, value=127, time=self.current_delta()))
+            self.__track.append(Message('control_change', control=64, value=127, time=self.seconds2ticks(time)))
         else:
             logger.info("pedal off")
-            self.__track.append(Message('control_change', control=64, value=0, time=self.current_delta()))
+            self.__track.append(Message('control_change', control=64, value=0, time=self.seconds2ticks(time)))
 
     def current_delta(self):
         current_time = time()
@@ -100,13 +100,16 @@ class MidiRecorder:
         self.__last_message_time = current_time
         return delta_ticks
 
-    def second2tick(self, second, ticks_per_beat, tempo):
-        """(COPY PASTED FROM MIDO since I can't find how to access it)
-        Convert absolute time in seconds to ticks.
-        Returns absolute time in ticks for a chosen MIDI file time
-        resolution (ticks per beat, also called PPQN or pulses per quarter
-        note) and tempo (microseconds per beat).
-        """
-        scale = tempo * 1e-6 / ticks_per_beat
-        return int(second / scale)
-        return delta_ticks
+    def seconds2ticks(self, time_in_seconds):
+        return seconds2ticks(time_in_seconds, ticks_per_beat=self.__midi_file.ticks_per_beat, tempo=self.__tempo)
+
+def seconds2ticks(second, ticks_per_beat, tempo):
+    """(COPY PASTED FROM MIDO since I can't find how to access it)
+    Convert absolute time in seconds to ticks.
+    Returns absolute time in ticks for a chosen MIDI file time
+    resolution (ticks per beat, also called PPQN or pulses per quarter
+    note) and tempo (microseconds per beat).
+    """
+    scale = tempo * 1e-6 / ticks_per_beat
+    return int(second / scale)
+    return delta_ticks
