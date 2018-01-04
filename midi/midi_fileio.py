@@ -50,7 +50,7 @@ class MidiRecorder:
         self.file_name = file_name
         self.__midi_monitor = midi_monitor
         self.__recorded_notes = []
-        self.__midi_file = MidiFile(ticks_per_beat=960)
+        self.__midi_file = MidiFile(ticks_per_beat=9600)
         self.__tempo = 500000
         
         # add track
