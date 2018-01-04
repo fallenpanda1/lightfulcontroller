@@ -50,8 +50,20 @@ class NeopixelSimulationPygDrawable:
         for index, color in enumerate(colors):
             if index >= length:
                 break
-            self.__group.sprites()[index].update_color(color)
+
+            # BRG -> RGB (wait, what? why is stuff coming in as BRG?)
+            grb_color = (color[2], color[0], color[1])
+            brightened_color = self.brighten(grb_color)
+
+            self.__group.sprites()[index].update_color(brightened_color)
         pass
+
+    def brighten(self, color):
+        return (self.brighten_component(color[0]), self.brighten_component(color[1]), self.brighten_component(color[2]))
+
+    def brighten_component(self, color_component):
+        c = color_component
+        return int(255 - ((1.0 * (255 - c) / 255)**5 * 255))
 
     def setup_lights_for_section(self, section_length):
         """ 
