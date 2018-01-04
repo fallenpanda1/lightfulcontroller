@@ -42,7 +42,7 @@ class GradientLightEffect(LightEffect):
         self.color2 = color2
 
     def get_color(self, progress, gradient):
-        alpha = math.sin((progress - gradient) * math.pi * 2) / 2 + 0.5
+        alpha = math.sin((progress - gradient / 2) * math.pi * 2) / 2 + 0.5
         return self.color1.with_alpha(alpha).blended_with(self.color2)
 
 class LightEffectTask(Task):
@@ -73,9 +73,10 @@ class LightEffectTask(Task):
         return self.progress() == 1
 
 class RepeatingTask(Task):
-    def __init__(self, task):
+    def __init__(self, task, progress_offset=0.0):
         self.__repeating = True
         self.task = task
+        self.task._start_time -= self.task.duration * progress_offset
 
     def stop_repeating(self):
         self.__repeating = False

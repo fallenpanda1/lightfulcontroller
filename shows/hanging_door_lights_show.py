@@ -54,16 +54,16 @@ class HangingDoorLightsShow:
         self.mappers = [base_mapper, melody1_mapper]
 
         # add base layer for scheduler
-        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 50, 35)), self.row1, 5, pixel_adapter))
+        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 60, 30)), self.row1, 10, pixel_adapter), progress_offset = 0)
         scheduler.add(base_layer_effect)
 
-        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 50, 35)), self.row2, 5, pixel_adapter))
+        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 60, 30)), self.row2, 10, pixel_adapter), progress_offset = 0.2)
         scheduler.add(base_layer_effect)
 
-        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 50, 35)), self.row3, 5, pixel_adapter))
+        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 60, 30)), self.row3, 10, pixel_adapter), progress_offset = 0.4)
         scheduler.add(base_layer_effect)
 
-        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 50, 35)), self.row4, 5, pixel_adapter))
+        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 60, 30)), self.row4, 10, pixel_adapter), progress_offset = 0.6)
         scheduler.add(base_layer_effect)
 
     def received_note(self, midi_note, time):
