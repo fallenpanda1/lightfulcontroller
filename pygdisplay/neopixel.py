@@ -47,13 +47,13 @@ class NeopixelSimulationPygDrawable:
 
     def update_with_colors(self, colors):
         length = len(self.__group.sprites())
-        for index, color in enumerate(colors):
+        for index, brg_color in enumerate(colors):
             if index >= length:
                 break
 
             # BRG -> RGB (wait, what? why is stuff coming in as BRG?)
-            grb_color = (color[2], color[0], color[1])
-            brightened_color = self.brighten(grb_color)
+            rgb_color = (brg_color[2], brg_color[0], brg_color[1])
+            brightened_color = self.brighten(rgb_color)
 
             self.__group.sprites()[index].update_color(brightened_color)
         pass
