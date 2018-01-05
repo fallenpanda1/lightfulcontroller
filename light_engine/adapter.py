@@ -36,6 +36,8 @@ class ArduinoPixelAdapter:
 
         logger.info("Serial open, handshake complete!")
 
+        self.ready_for_send = True
+
     def start(self):
         if not self.__serial.is_open:
             self.__serial.open()
@@ -64,10 +66,14 @@ class ArduinoPixelAdapter:
         if not self.__serial.is_open:
             logger.error("Trying to send serial when serial isn't open!")
 
-        self.__serial.write(self.__pixel_array)
+        # if ready_for_send is false it means we're waiting for arduino response
+        if not self.ready_for_send and self.__serial.in_waiting > 0:
+            response_string = self.__serial.readline() # any response will do for now -- Arduino just sends a single newline back 
+            self.ready_for_send = True
 
-        # TODO: we can optimize by not waiting for the readline until right before sending the next write message
-        response_string = self.__serial.readline()
+        if self.ready_for_send:
+            self.__serial.write(self.__pixel_array)
+            self.ready_for_send = False
 
 class VirtualArduinoClient:
     """ A fake arduino client that runs on a separate thread (TODO: and possibly actually handles rendering a lights screen??? thanks future Allen!)"""

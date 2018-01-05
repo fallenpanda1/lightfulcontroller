@@ -101,7 +101,7 @@ def main_loop(window):
         scheduler.tick() # TODO: The ticks only need to happen once per arduino update
         p.avg("scheduler")
         # push pixels
-        pixel_adapter.push_pixels()
+        pixel_adapter.push_pixels() # NOTE: this now only pushes pixels when the arduino returns a response
         p.avg("pixel push")
         # check for any keyboard input (TODO: move into a keyboard monitor object)
         character = stdscr.getch()
