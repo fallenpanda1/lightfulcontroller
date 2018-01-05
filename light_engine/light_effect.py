@@ -94,14 +94,33 @@ class RepeatingTask(Task):
 
         return self.task.is_finished()
 
-# TODO: definitely goes elsewhere
 class MidiOffLightEffectTask(LightEffectTask):
-    """A light effect task that sustains the first animation frame until the note is off"""
-    def __init__(self, effect, section, duration, light_adapter, note):
-        self.note = note
-        super().__init__(effect, section, duration, light_adapter)
+    """A special light effect task that reacts to the state of a particular MIDI note. 
+    The task sustains the first animation frame until the input note is off"""
+    def __init__(self, task, pitch, midi_monitor):
+        self.task = task
+        self.pitch = pitch
+        self.__midi_monitor = midi_monitor
+        midi_monitor.register(self)
+        self.__note_off_received = False
+
+    def received_midi(self, rtmidi_message):
+        # remove this conditional if we're confident it's not being hit
+        if rtmidi_message.isNoteOn() and rtmidi_message.getVelocity == 0:
+            logger.info("OH CRAP")
+
+        if rtmidi_message.isNoteOff() and rtmidi_message.getNoteNumber() == self.pitch:
+            self.__note_off_received = True
+            self.task._start_time = time.time() # now start the task at the current time
+            self.__midi_monitor.unregister(self)
 
     def tick(self):
-        if self.note.velocity > 0:
-            self._start_time = time.time()
-        super().tick()
+        if not self.__note_off_received:
+            return
+        self.task.tick()
+
+    def progress(self):
+        return self.task.progress()
+
+    def is_finished(self):
+        return self.task.is_finished()

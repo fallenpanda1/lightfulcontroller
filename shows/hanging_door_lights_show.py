@@ -33,9 +33,11 @@ class PitchToSubSectionMapper:
 class HangingDoorLightsShow:
     """Just for debugging"""
 
-    def __init__(self, scheduler, pixel_adapter, pygscreen):
+    def __init__(self, scheduler, pixel_adapter, pygscreen, midi_monitor):
         self.__scheduler = scheduler
         self.__pixel_adapter = pixel_adapter
+        self.__midi_monitor = midi_monitor
+        self.__midi_monitor.register(self)
         self.__rain_drawable = None# RainPygDrawable()
         # self.__neopixel_drawable = NeopixelSimulationPygDrawable()
         # pygscreen.display_with_drawable(self.__neopixel_drawable)
@@ -66,24 +68,28 @@ class HangingDoorLightsShow:
         base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 60, 30)), self.row4, 10, pixel_adapter), progress_offset = 0.6)
         scheduler.add(base_layer_effect)
 
-    def received_note(self, midi_note, time):
-        if midi_note.velocity == 0:
-            return # don't need to handle not off events
+    def received_midi(self, rtmidi_message):
+        if rtmidi_message.isNoteOn():
+            if rtmidi_message.getVelocity() == 0: # remove this if if it never gets reached
+                logger.info("NOT SUPPOSED TO GET HERE!!")
+                return
 
-        logger.info("received note:" + str(midi_note))
+            logger.info("received note:" + str(rtmidi_message))
+            pitch = rtmidi_message.getNoteNumber()
 
-        # TODO: we should make the mappers more magical and take care of the light effects as well
-        # e.g. a mapper takes a set of pitches and maps it to the scheduling of actual animations
-        for index, mapper in enumerate(self.mappers):
-            section = mapper.section_for_pitch(midi_note.pitch)
-            if section is not None:
-                color = make_color(220, 200, 60) if index == 1 else make_color(120, 0, 200)
-                simple_on_effect_task = MidiOffLightEffectTask(SolidColorLightEffect(color=color), section, 0.4, self.__pixel_adapter, midi_note)
-                self.__scheduler.add(simple_on_effect_task)
-                break
-        
-        if self.__rain_drawable != None:
-            self.__rain_drawable.add_raindrop_note(1.0 * (midi_note.pitch % 10) / 10)
+            # TODO: we should make the mappers more magical and take care of the light effects as well
+            # e.g. a mapper takes a set of pitches and maps it to the scheduling of actual animations
+            for index, mapper in enumerate(self.mappers):
+                section = mapper.section_for_pitch(pitch)
+                if section is not None:
+                    color = make_color(220, 200, 60) if index == 1 else make_color(120, 0, 200)
+                    simple_on_effect_task = LightEffectTask(SolidColorLightEffect(color=color), section, 0.4, self.__pixel_adapter)
+                    simple_on_effect_task = MidiOffLightEffectTask(simple_on_effect_task, rtmidi_message.getNoteNumber(), self.__midi_monitor)
+                    self.__scheduler.add(simple_on_effect_task)
+                    break
+            
+            if self.__rain_drawable != None:
+                self.__rain_drawable.add_raindrop_note(1.0 * (pitch % 10) / 10)
 
 def is_valid_C_major_pitch(pitch):
     p = pitch % 12

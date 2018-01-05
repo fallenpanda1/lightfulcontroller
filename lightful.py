@@ -66,8 +66,7 @@ def main_loop(window):
     pixel_adapter.start()
 
     # create show
-    lights_show = hanging_door_lights_show.HangingDoorLightsShow(scheduler, pixel_adapter, pygscreen)
-    monitor.register(lights_show)
+    lights_show = hanging_door_lights_show.HangingDoorLightsShow(scheduler, pixel_adapter, pygscreen, monitor)
 
     # TODO: maybe have a protocol a light show can implement to describe its simulation layout
     if virtual_client is not None:
