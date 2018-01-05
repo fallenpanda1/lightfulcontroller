@@ -157,7 +157,7 @@ def convert_to_mido(rtmidi_message, time):
         return mido.Message('note_off', note=m.getNoteNumber(), velocity=0, time=time)
     elif m.isController():
         if m.getControllerNumber() == 64: # sustain pedal
-            return mido.Message('control_change', control=64, value=m.getControllerValue())
+            return mido.Message('control_change', control=64, value=m.getControllerValue(), time=time)
 
     logger.error("received unknown/unimplemented midi message: " + str(m))
 
