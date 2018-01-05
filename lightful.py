@@ -1,7 +1,7 @@
 import curses
 import argparse
 from midi.midi_monitor import MidiMonitor # TODO: erm, can we simplify this? is that what the __init__ file is for?
-from midi.midi_fileio import MidiRecorder, MidiPlayer
+from midi.midi_fileio import MidiRecorder, MidiPlayer, InMemoryMidiPlayer
 import logging
 from curses_log_handler import CursesLogHandler
 from light_engine.adapter import ArduinoPixelAdapter, VirtualArduinoClient
@@ -126,6 +126,7 @@ def main_loop(window):
             monitor.send_virtual_note(offset = character - ord('1'))
         elif character == ord('p'):
             midi_player = MidiPlayer("recording1.mid", monitor)
+            #midi_player = InMemoryMidiPlayer(midi_recorder.in_memory_recording, monitor)
             midi_player.play()
         p.avg("character read")
         # render loop for rain

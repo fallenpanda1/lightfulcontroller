@@ -34,6 +34,30 @@ class MidiPlayer:
             mido_message = self.__midi_message_queue.get() 
             self.__midi_out.send_midi_message(convert_to_rt(mido_message))
 
+class InMemoryMidiPlayer:
+    def __init__(self, in_memory_recording, virtual_midi_monitor):
+        """ In-memory recording is a list of tuples: (mido_message, delta_time_from_record_start) """
+        self.in_memory_recording = in_memory_recording.copy() # make a copy since we'll be mutating
+        self.__midi_out = virtual_midi_monitor
+
+    def play(self):
+        self.__start_time = time.time()
+        
+        # parent_connection, child_connection = Pipe()
+        #self.process = multiprocessing.Process(target=self.play_loop, args=(child_connection))
+
+    def play_loop(self):
+        if len(self.in_memory_recording) == 0:
+            return
+
+        mido_message, delta_time = self.in_memory_recording[0]
+        current_time = time.time()
+
+        if current_time >= self.__start_time + delta_time:
+            self.__midi_out.send_midi_message(convert_to_rt(mido_message))
+            self.in_memory_recording.pop(0)
+            logger.info("playing delay: " + str(current_time - (self.__start_time + delta_time)))
+
 class MidiRecorder:
     """ Records incoming MIDI """
     def __init__(self, file_name, midi_monitor):
