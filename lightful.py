@@ -133,4 +133,6 @@ def main_loop(window):
         pygscreen.draw_loop()
         p.avg("pygscreen rendering")
 
+        time.sleep(0.001) # have to sleep at least a short time to allow any other threads to do their stuff (e.g. midi player)
+
 curses.wrapper(main_loop)
