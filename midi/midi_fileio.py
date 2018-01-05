@@ -64,7 +64,7 @@ class MidiRecorder:
         self.file_name = file_name
         self.__midi_monitor = midi_monitor
         self.__recorded_notes = []
-        self.__midi_file = mido.MidiFile(ticks_per_beat=9600)
+        self.__midi_file = mido.MidiFile(ticks_per_beat=960)
         self.__tempo = 500000
         
         # add track
@@ -75,11 +75,15 @@ class MidiRecorder:
         self.__track.append(mido.MetaMessage('set_tempo', tempo=self.__tempo))
         self.__last_message_time = None
 
+        self.in_memory_recording = []
+
     def start(self):
         """ Begins recording of all MIDI events """
         logger.info("MidiRecorder: begin recording midi events")
         self.__midi_monitor.register(self)
-        self.__last_message_time = time.time()
+        self.__start_time = time.time()
+        self.__last_message_time = self.__start_time
+        self.__last_saved_is_pedal_on = False # have to track pedal state because we get a LOT of pedal messages but only really care if its on or off
 
     def is_recording(self):
         return self.__last_message_time != None
@@ -92,13 +96,30 @@ class MidiRecorder:
         self.__last_message_time = None
 
     def received_midi(self, rtmidi_message):
+        if not is_recognized_rtmidi_message(rtmidi_message):
+            logger.error("received an unknown midi message")
+            return
+
+        if rtmidi_message.isController() and rtmidi_message.getControllerNumber() == 64:
+            is_pedal_on = rtmidi_message.getControllerValue() >= 64 # taken from https://www.cs.cmu.edu/~music/cmsip/readings/Standard-MIDI-file-format-updated.pdf
+            if self.__last_saved_is_pedal_on == is_pedal_on:
+                # ignore pedal events that don't actually change its on state
+                return
+            self.__last_saved_is_pedal_on = is_pedal_on
+        
         logger.info("Recorder received msg: " + str(rtmidi_message))
 
         current_time = time.time()
         tick_delta = self.convert_to_ticks(current_time - self.__last_message_time)
+        logger.info("time delta: " + str(current_time - self.__last_message_time))
+        logger.info("time->tick->time: " + str(self.convert_to_seconds(tick_delta)))
         self.__last_message_time = current_time
 
-        self.__track.append(convert_to_mido(rtmidi_message, tick_delta))
+        mido_message = convert_to_mido(rtmidi_message, tick_delta)
+        self.__track.append(mido_message)
+
+        in_memory_message = (mido_message, current_time - self.__start_time)
+        self.in_memory_recording.append(in_memory_message)
 
     def current_delta(self):
         current_time = time.time()
@@ -110,7 +131,11 @@ class MidiRecorder:
     def convert_to_ticks(self, time_in_seconds):
         scale = self.__tempo * 1e-6 / self.__midi_file.ticks_per_beat
         return int(time_in_seconds / scale)
-    
+
+    def convert_to_seconds(self, ticks):
+        scale = self.__tempo * 1e-6 / self.__midi_file.ticks_per_beat
+        return ticks * scale
+
 # Convenience conversions between mido and rtmidi. TODO: it'd be nice to monkey-patch these directly onto the classes
 
 def convert_to_rt(mido_message):
@@ -136,3 +161,14 @@ def convert_to_mido(rtmidi_message, time):
 
     logger.error("received unknown/unimplemented midi message: " + str(m))
 
+def is_recognized_rtmidi_message(rtmidi_message):
+    """ Is the input type string a midi type we recognize """
+    m = rtmidi_message
+    if m.isNoteOn() or m.isNoteOff():
+        return True
+    elif m.isController():
+        if m.getControllerNumber() == 64: # sustain pedal
+            return True
+
+    logger.error("received unknown/unimplemented midi message: " + str(m))
+    return False
