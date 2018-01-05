@@ -105,18 +105,14 @@ class MidiOffLightEffectTask(LightEffectTask):
         self.__note_off_received = False
 
     def received_midi(self, rtmidi_message):
-        # remove this conditional if we're confident it's not being hit
-        if rtmidi_message.isNoteOn() and rtmidi_message.getVelocity == 0:
-            logger.info("OH CRAP")
-
         if rtmidi_message.isNoteOff() and rtmidi_message.getNoteNumber() == self.pitch:
             self.__note_off_received = True
-            self.task._start_time = time.time() # now start the task at the current time
             self.__midi_monitor.unregister(self)
 
     def tick(self):
         if not self.__note_off_received:
-            return
+            self.task._start_time = time.time() # TODO: sanity check that this isn't a big performance hit
+
         self.task.tick()
 
     def progress(self):
