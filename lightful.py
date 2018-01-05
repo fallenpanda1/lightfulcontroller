@@ -5,13 +5,11 @@ from midi.midi_fileio import MidiRecorder, MidiPlayer
 import logging
 from curses_log_handler import CursesLogHandler
 from light_engine.adapter import ArduinoPixelAdapter, VirtualArduinoClient
-from array import array
 from scheduler.scheduler import *
 from light_engine.light_effect import *
-from color import *
 from shows import *
-import rtmidi
 from pygdisplay.screen import PygScreen
+import profiler
 
 logger = logging.getLogger("global")
 
@@ -85,20 +83,26 @@ def main_loop(window):
     midi_recorder = None
     midi_player = None
 
+    p = profiler.Profiler()
+    p.enabled = False
+
     while True:
+        p.avg("loop start")
+
         # play any pending notes from the local midi player
         if midi_player is not None:
             midi_player.play_loop()
 
+        p.avg("midi player play")
         # listen for any new midi input
         monitor.listen_loop()
-
+        p.avg("midi listen")
         # tick scheduler
-        scheduler.tick()
-
+        scheduler.tick() # TODO: The ticks only need to happen once per arduino update
+        p.avg("scheduler")
         # push pixels
         pixel_adapter.push_pixels()
-
+        p.avg("pixel push")
         # check for any keyboard input (TODO: move into a keyboard monitor object)
         character = stdscr.getch()
         if character == ord('o'):
@@ -123,8 +127,9 @@ def main_loop(window):
         elif character == ord('p'):
             midi_player = MidiPlayer("recording1.mid", monitor)
             midi_player.play()
-
+        p.avg("character read")
         # render loop for rain
         pygscreen.draw_loop()
+        p.avg("pygscreen rendering")
 
 curses.wrapper(main_loop)
