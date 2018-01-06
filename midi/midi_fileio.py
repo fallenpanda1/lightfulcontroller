@@ -49,9 +49,6 @@ class InMemoryMidiPlayer:
     def play(self):
         self.__start_time = time.time()
         
-        # parent_connection, child_connection = Pipe()
-        #self.process = multiprocessing.Process(target=self.play_loop, args=(child_connection))
-
     def play_loop(self):
         if len(self.in_memory_recording) == 0:
             return
