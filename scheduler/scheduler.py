@@ -8,6 +8,10 @@ class Task(ABC):
     """A "lightful" task gets scheduled to tick once per main loop until cfinished"""
 
     @abstractmethod
+    def start(self):
+        pass
+
+    @abstractmethod
     def tick(self):
         pass
 
@@ -31,6 +35,7 @@ class Scheduler:
     def add(self, task):
         """add a light effect"""
         self.__tasks.append(task)
+        task.start()
 
     def clear(self):
         self.__tasks.clear()

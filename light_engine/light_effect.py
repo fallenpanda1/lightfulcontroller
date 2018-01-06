@@ -57,7 +57,10 @@ class LightEffectTask(Task):
         self.section = section
         self.duration = duration
         self.light_adapter = light_adapter
-        self._start_time = time.time() # protected
+
+    def start(self):
+        # todo: maybe it's better to have the scheduler manage times
+        self._start_time = time.time()
 
     def tick(self):
         for index, position in enumerate(self.section.positions):
@@ -75,8 +78,12 @@ class LightEffectTask(Task):
 class RepeatingTask(Task):
     def __init__(self, task, progress_offset=0.0):
         self.__repeating = True
+        self.progress_offset = progress_offset
         self.task = task
-        self.task._start_time -= self.task.duration * progress_offset
+
+    def start(self):
+        self.task.start()
+        self.task._start_time -= self.task.duration * self.progress_offset
 
     def stop_repeating(self):
         self.__repeating = False
@@ -103,6 +110,9 @@ class MidiOffLightEffectTask(LightEffectTask):
         self.__midi_monitor = midi_monitor
         midi_monitor.register(self)
         self.__note_off_received = False
+
+    def start(self):
+        self.task.start()
 
     def received_midi(self, rtmidi_message):
         if rtmidi_message.isNoteOff() and rtmidi_message.getNoteNumber() == self.pitch:

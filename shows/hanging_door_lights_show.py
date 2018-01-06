@@ -7,29 +7,6 @@ from pygdisplay.screen import PygScreen
 from pygdisplay.rain import RainPygDrawable
 from pygdisplay.neopixel import NeopixelSimulationPygDrawable
 
-class PitchToSubSectionMapper:
-    """ 
-    Given a range of (ordered) pitches and a light section with multiple lights, does an evenly spaced out mapping
-    between pitches and lights.
-    """
-    def __init__(self, ordered_pitches, light_section):
-        self.pitches = ordered_pitches
-        self.light_section = light_section
-
-    def section_for_pitch(self, pitch):
-        pitch_index = None
-        for index, element in enumerate(self.pitches):
-            if pitch == element:
-                pitch_index = index
-
-        if pitch_index is None:
-            return None
-
-        ratio = pitch_index / len(self.pitches)
-        section_position = round(ratio * len(self.light_section.positions))
-        subsection_value = self.light_section.positions[section_position]
-        return LightSection([subsection_value])
-
 class HangingDoorLightsShow:
     """Just for debugging"""
 
@@ -39,7 +16,6 @@ class HangingDoorLightsShow:
         self.__midi_monitor = midi_monitor
         self.__midi_monitor.register(self)
         self.__rain_drawable = None# RainPygDrawable()
-        # self.__neopixel_drawable = NeopixelSimulationPygDrawable()
         # pygscreen.display_with_drawable(self.__neopixel_drawable)
 
         self.row1 = LightSection(range(10, 30))
@@ -50,10 +26,20 @@ class HangingDoorLightsShow:
         self.row3and4 = LightSection(flatten_lists([self.row3.positions, self.row4.positions]))
         self.all = LightSection(flatten_lists([self.row1.positions, self.row2.positions, self.row3.positions, self.row4.positions]))
 
-        base_mapper = PitchToSubSectionMapper(filter_out_non_C_notes(range(36, 65)), self.row1and2)
-        melody1_mapper = PitchToSubSectionMapper(filter_out_non_C_notes(range(67, 87)), self.row3)
+        # mapping between note and light animations
+        self.note_map = {}
 
-        self.mappers = [base_mapper, melody1_mapper]
+        # base map
+        # TODO: nandemonaiya contains a Bb, which is not a C major note
+        for pitch, light_position in evenly_spaced_mapping(filter_out_non_C_notes(range(36, 66)), self.row2.positions).items():
+            logger.info("light position!" + str(light_position))
+            task = LightEffectTask(SolidColorLightEffect(color=make_color(220, 200, 60)), LightSection([light_position]), 0.4, self.__pixel_adapter)
+            self.note_map[pitch] = MidiOffLightEffectTask(task, pitch, self.__midi_monitor)
+
+        # melody map
+        for pitch, light_position in evenly_spaced_mapping(filter_out_non_C_notes(range(67, 90)), self.row3.positions).items():
+            task = LightEffectTask(SolidColorLightEffect(color=make_color(220, 200, 60)), LightSection([light_position]), 0.4, self.__pixel_adapter)
+            self.note_map[pitch] = MidiOffLightEffectTask(task, pitch, self.__midi_monitor)
 
         self.initialize_lights()
 
@@ -85,26 +71,25 @@ class HangingDoorLightsShow:
 
     def received_midi(self, rtmidi_message):
         if rtmidi_message.isNoteOn():
-            if rtmidi_message.getVelocity() == 0: # remove this if if it never gets reached
-                logger.info("NOT SUPPOSED TO GET HERE!!")
-                return
+            logger.info("received note_on:" + str(rtmidi_message))
 
-            logger.info("received note:" + str(rtmidi_message))
             pitch = rtmidi_message.getNoteNumber()
-
-            # TODO: we should make the mappers more magical and take care of the light effects as well
-            # e.g. a mapper takes a set of pitches and maps it to the scheduling of actual animations
-            for index, mapper in enumerate(self.mappers):
-                section = mapper.section_for_pitch(pitch)
-                if section is not None:
-                    color = make_color(220, 200, 60) if index == 1 else make_color(120, 0, 200)
-                    simple_on_effect_task = LightEffectTask(SolidColorLightEffect(color=color), section, 0.4, self.__pixel_adapter)
-                    simple_on_effect_task = MidiOffLightEffectTask(simple_on_effect_task, rtmidi_message.getNoteNumber(), self.__midi_monitor)
-                    self.__scheduler.add(simple_on_effect_task)
-                    break
+            if pitch in self.note_map:
+                self.__scheduler.add(self.note_map[pitch])
             
             if self.__rain_drawable != None:
                 self.__rain_drawable.add_raindrop_note(1.0 * (pitch % 10) / 10)
+
+def evenly_spaced_mapping(first, second):
+    """ Creates a map between elements of first array and second array. If first and second aren't the same
+    length, the mapping will space out elements of the second array (TODO WORD THIS BETTER.)
+    Example: [1, 2, 3] -> [a, b, c, d, e, f] returns {1:a, 2:c, 3:e} """
+    mapping = {}
+    for key_index, key in enumerate(first):
+        value_index = round(1.0 * key_index * len(second) / len(first))
+        value = second[value_index]
+        mapping[key] = value
+    return mapping
 
 def is_valid_C_major_pitch(pitch):
     p = pitch % 12
