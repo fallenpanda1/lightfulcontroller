@@ -75,6 +75,14 @@ class HangingDoorLightsShow:
         self.__scheduler.clear()
         self.initialize_lights()
 
+    def clear_lights(self):
+        # TODO: this should be shareable between light shows
+        self.__scheduler.add(LightEffectTask(SolidColorLightEffect(color=make_color(0, 0, 0)), self.all, 1, self.__pixel_adapter))
+        self.__scheduler.tick()
+        self.__pixel_adapter.wait_for_ready_state()
+        self.__pixel_adapter.push_pixels()
+        self.__pixel_adapter.wait_for_ready_state()
+
     def received_midi(self, rtmidi_message):
         if rtmidi_message.isNoteOn():
             if rtmidi_message.getVelocity() == 0: # remove this if if it never gets reached

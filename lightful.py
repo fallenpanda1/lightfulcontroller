@@ -112,6 +112,7 @@ def main_loop(window):
         elif character == ord('t'):
             pixel_adapter.push_pixels()
         elif character == ord('q'):
+            lights_show.clear_lights()
             pixel_adapter.stop()
             monitor.stop()
             exit()

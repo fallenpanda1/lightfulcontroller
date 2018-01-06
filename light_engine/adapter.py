@@ -3,7 +3,7 @@ from array import array
 import logging
 import os, pty
 import threading
-from time import sleep, time
+import time
 from pygdisplay.neopixel import NeopixelSimulationPygDrawable
 from color import *
 
@@ -62,14 +62,23 @@ class ArduinoPixelAdapter:
         else:
             return x
 
-    def push_pixels(self):
-        if not self.__serial.is_open:
-            logger.error("Trying to send serial when serial isn't open!")
+    def wait_for_ready_state(self):
+        """ Block and wait for arduino to send back message """
+        while not self.ready_for_send:
+            self.check_for_ready_state()
+            time.sleep(0.01)
 
+    def check_for_ready_state(self):
         # if ready_for_send is false it means we're waiting for arduino response
         if not self.ready_for_send and self.__serial.in_waiting > 0:
             response_string = self.__serial.readline() # any response will do for now -- Arduino just sends a single newline back 
             self.ready_for_send = True
+
+    def push_pixels(self):
+        if not self.__serial.is_open:
+            logger.error("Trying to send serial when serial isn't open!")
+
+        self.check_for_ready_state()
 
         if self.ready_for_send:
             self.__serial.write(self.__pixel_array)
@@ -108,7 +117,7 @@ class VirtualArduinoClient:
         self.__serial_writer.flush()
 
     def __loop(self):
-        sleep(0.1) # wait a little while for the adapter to be initialized before beginning setup protocol
+        time.sleep(0.1) # wait a little while for the adapter to be initialized before beginning setup protocol
         logger.info("sending message")
         self.__write_to_master("I'm ready! hit me with some setup calls!\n")
 
@@ -119,7 +128,7 @@ class VirtualArduinoClient:
                 # we should simulate the delay of the Arduino actually setting the neopixels. According to docs:
                 # 'One pixel requires 24 bits (8 bits each for red, green blue) — 30 microseconds.'
                 # https://learn.adafruit.com/adafruit-neopixel-uberguide/advanced-coding
-                sleep(0.000030 * self.__num_pixels)
+                time.sleep(0.000030 * self.__num_pixels)
 
                 # TODO: wait for expected # of lines, then convert to a color array
                 #self.__neopixel_drawable()
@@ -134,4 +143,4 @@ class VirtualArduinoClient:
                 self.__write_to_master("\n") # got your message!
                 setup_complete = True
 
-            sleep(0.01)
+            time.sleep(0.01)
