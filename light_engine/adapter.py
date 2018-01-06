@@ -131,7 +131,7 @@ class VirtualArduinoClient:
 
                     self.__neopixel_drawable.update_with_colors(color_array)
 
-                self.__write_to_master("got your message!\n")
+                self.__write_to_master("\n") # got your message!
                 setup_complete = True
 
             sleep(0.01)
