@@ -7,6 +7,9 @@ import queue
 
 logger = logging.getLogger("global")
 
+DEFAULT_TEMPO = 500000
+DEFAULT_TICKS_PER_BEAT = 9600
+
 class MidiPlayer:
     """ Plays a MIDI file """
     def __init__(self, file_name, virtual_midi_monitor): # TODO: rename--maybe virtual sender or something?
@@ -18,21 +21,24 @@ class MidiPlayer:
         """ Play the file """
         logger.info("playing midi file: " + self.file_name)
         self.__midi_file = mido.MidiFile(self.file_name)
-        note_scheduler = threading.Thread(target=self.schedule_notes, args=())
-        note_scheduler.daemon = True
-        note_scheduler.start()
-
-    def schedule_notes(self):
-        """ schedules MIDI notes to be played on a background thread """
-        for message in mido.MidiFile(self.file_name).play():
-            self.__midi_message_queue.put(message)
+        self.__midi_event_list = list(self.__midi_file)
+        self.__last_stored_time = time.time()
 
     def play_loop(self):
         """ loop that plays any scheduled MIDI notes (runs on main thread) """
-        while not self.__midi_message_queue.empty():
-            # get() normally blocks for next message, but since we check that queue isn't empty this should return immediately
-            mido_message = self.__midi_message_queue.get() 
-            self.__midi_out.send_midi_message(convert_to_rt(mido_message))
+        if len(self.__midi_event_list) == 0:
+            return
+
+        mido_message = self.__midi_event_list[0]
+        delta_time = mido_message.time
+        current_time = time.time()
+
+        if current_time >= self.__last_stored_time + delta_time:
+            if not isinstance(mido_message, mido.MetaMessage):
+                self.__midi_out.send_midi_message(convert_to_rt(mido_message))
+            self.__midi_event_list.pop(0)
+            time_drift = current_time - (self.__last_stored_time + delta_time)
+            self.__last_stored_time = current_time - time_drift
 
 class InMemoryMidiPlayer:
     def __init__(self, in_memory_recording, virtual_midi_monitor):
@@ -56,7 +62,6 @@ class InMemoryMidiPlayer:
         if current_time >= self.__start_time + delta_time:
             self.__midi_out.send_midi_message(convert_to_rt(mido_message))
             self.in_memory_recording.pop(0)
-            logger.info("playing delay: " + str(current_time - (self.__start_time + delta_time)))
 
 class MidiRecorder:
     """ Records incoming MIDI """
@@ -64,8 +69,8 @@ class MidiRecorder:
         self.file_name = file_name
         self.__midi_monitor = midi_monitor
         self.__recorded_notes = []
-        self.__midi_file = mido.MidiFile(ticks_per_beat=960)
-        self.__tempo = 500000
+        self.__midi_file = mido.MidiFile(ticks_per_beat=DEFAULT_TICKS_PER_BEAT)
+        self.__tempo = DEFAULT_TEMPO
         
         # add track
         self.__track = mido.MidiTrack() # single track implementation for now
@@ -110,9 +115,9 @@ class MidiRecorder:
         logger.info("Recorder received msg: " + str(rtmidi_message))
 
         current_time = time.time()
-        tick_delta = self.convert_to_ticks(current_time - self.__last_message_time)
-        logger.info("time delta: " + str(current_time - self.__last_message_time))
-        logger.info("time->tick->time: " + str(self.convert_to_seconds(tick_delta)))
+        tick_delta = convert_to_ticks(current_time - self.__last_message_time)
+        # logger.info("time delta: " + str(current_time - self.__last_message_time))
+        # logger.info("time->tick->time: " + str(convert_to_seconds(tick_delta)))
         self.__last_message_time = current_time
 
         mido_message = convert_to_mido(rtmidi_message, tick_delta)
@@ -121,20 +126,13 @@ class MidiRecorder:
         in_memory_message = (mido_message, current_time - self.__start_time)
         self.in_memory_recording.append(in_memory_message)
 
-    def current_delta(self):
-        current_time = time.time()
-        delta_seconds = current_time - self.__last_message_time
-        delta_ticks = self.second2tick(delta_seconds, ticks_per_beat=self.__midi_file.ticks_per_beat, tempo=self.__tempo)
-        self.__last_message_time = current_time
-        return delta_ticks
+def convert_to_ticks(time_in_seconds):
+    scale = DEFAULT_TEMPO * 1e-6 / DEFAULT_TICKS_PER_BEAT
+    return int(time_in_seconds / scale)
 
-    def convert_to_ticks(self, time_in_seconds):
-        scale = self.__tempo * 1e-6 / self.__midi_file.ticks_per_beat
-        return int(time_in_seconds / scale)
-
-    def convert_to_seconds(self, ticks):
-        scale = self.__tempo * 1e-6 / self.__midi_file.ticks_per_beat
-        return ticks * scale
+def convert_to_seconds(ticks):
+    scale = DEFAULT_TEMPO * 1e-6 / DEFAULT_TICKS_PER_BEAT
+    return ticks * scale
 
 # Convenience conversions between mido and rtmidi. TODO: it'd be nice to monkey-patch these directly onto the classes
 
