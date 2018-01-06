@@ -55,18 +55,25 @@ class HangingDoorLightsShow:
 
         self.mappers = [base_mapper, melody1_mapper]
 
+        self.initialize_lights()
+
+    def initialize_lights(self):
         # add base layer for scheduler
-        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 60, 30)), self.row1, 10, pixel_adapter), progress_offset = 0)
-        scheduler.add(base_layer_effect)
+        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 60, 30)), self.row1, 10, self.__pixel_adapter), progress_offset = 0)
+        self.__scheduler.add(base_layer_effect)
 
-        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 60, 30)), self.row2, 10, pixel_adapter), progress_offset = 0.2)
-        scheduler.add(base_layer_effect)
+        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 60, 30)), self.row2, 10, self.__pixel_adapter), progress_offset = 0.2)
+        self.__scheduler.add(base_layer_effect)
 
-        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 60, 30)), self.row3, 10, pixel_adapter), progress_offset = 0.4)
-        scheduler.add(base_layer_effect)
+        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 60, 30)), self.row3, 10, self.__pixel_adapter), progress_offset = 0.4)
+        self.__scheduler.add(base_layer_effect)
 
-        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 60, 30)), self.row4, 10, pixel_adapter), progress_offset = 0.6)
-        scheduler.add(base_layer_effect)
+        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 60, 30)), self.row4, 10, self.__pixel_adapter), progress_offset = 0.6)
+        self.__scheduler.add(base_layer_effect)
+
+    def reset_lights(self):
+        self.__scheduler.clear()
+        self.initialize_lights()
 
     def received_midi(self, rtmidi_message):
         if rtmidi_message.isNoteOn():

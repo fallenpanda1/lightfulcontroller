@@ -32,6 +32,9 @@ class Scheduler:
         """add a light effect"""
         self.__tasks.append(task)
 
+    def clear(self):
+        self.__tasks.clear()
+
     def tick(self):
         """do the animation!"""
 

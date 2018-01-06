@@ -119,6 +119,7 @@ def main_loop(window):
             if midi_recorder == None:
                 midi_recorder = MidiRecorder("recording1.mid", monitor)
                 midi_recorder.start()
+                lights_show.reset_lights()
             else:
                 midi_recorder.stop() # TODO: maybe fork into cancel vs save?
                 midi_recorder = None
@@ -128,6 +129,7 @@ def main_loop(window):
             midi_player = MidiPlayer("recording1.mid", monitor)
             #midi_player = InMemoryMidiPlayer(midi_recorder.in_memory_recording, monitor)
             midi_player.play()
+            lights_show.reset_lights()
         p.avg("character read")
         # render loop for rain
         pygscreen.draw_loop()
