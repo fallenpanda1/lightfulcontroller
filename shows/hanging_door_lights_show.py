@@ -41,6 +41,10 @@ class HangingDoorLightsShow:
             task = LightEffectTask(SolidColorLightEffect(color=make_color(220, 200, 60)), LightSection([light_position]), 0.4, self.__pixel_adapter)
             self.note_map[pitch] = MidiOffLightEffectTask(task, pitch, self.__midi_monitor)
 
+        # low notes
+        for pitch in [29, 31, 33, 36]:
+            self.note_map[pitch] = LightEffectTask(MeteorLightEffect(color=make_color(220, 200, 60)), self.row1.reversed(), 1.6, self.__pixel_adapter)
+
         self.initialize_lights()
 
     def initialize_lights(self):
