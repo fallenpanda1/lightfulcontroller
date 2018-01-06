@@ -6,6 +6,7 @@ from color import *
 from pygdisplay.screen import PygScreen
 from pygdisplay.rain import RainPygDrawable
 from pygdisplay.neopixel import NeopixelSimulationPygDrawable
+import copy
 
 class HangingDoorLightsShow:
     """Just for debugging"""
@@ -79,7 +80,7 @@ class HangingDoorLightsShow:
 
             pitch = rtmidi_message.getNoteNumber()
             if pitch in self.note_map:
-                self.__scheduler.add(self.note_map[pitch])
+                self.__scheduler.add(copy.copy(self.note_map[pitch]))
             
             if self.__rain_drawable != None:
                 self.__rain_drawable.add_raindrop_note(1.0 * (pitch % 10) / 10)
