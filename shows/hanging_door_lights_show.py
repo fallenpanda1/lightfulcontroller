@@ -28,13 +28,12 @@ class HangingDoorLightsShow:
         # base map
         # TODO: nandemonaiya contains a Bb, which is not a C major note
         for pitch, light_position in evenly_spaced_mapping(filter_out_non_C_notes(range(36, 66)), self.row2.positions).items():
-            logger.info("light position!" + str(light_position))
             task = LightEffectTask(SolidColorLightEffect(color=make_color(220, 200, 60)), LightSection([light_position]), 0.3, self.__pixel_adapter)
             self.note_map[pitch] = MidiOffLightEffectTask(task, pitch, self.__midi_monitor)
 
         # melody map
         for pitch, light_position in evenly_spaced_mapping(filter_out_non_C_notes(range(67, 90)), self.row3.positions).items():
-            task = LightEffectTask(SolidColorLightEffect(color=make_color(220, 200, 60)), LightSection([light_position]), 0.4, self.__pixel_adapter)
+            task = LightEffectTask(SolidColorLightEffect(color=make_color(220, 200, 60)), LightSection([light_position]), 0.3, self.__pixel_adapter)
             self.note_map[pitch] = MidiOffLightEffectTask(task, pitch, self.__midi_monitor)
 
         # low notes
@@ -75,17 +74,9 @@ class HangingDoorLightsShow:
 
             pitch = rtmidi_message.getNoteNumber()
             if pitch in self.note_map:
-                self.remove_existing_tasks_for_pitch(pitch)
-
                 task = copy.copy(self.note_map[pitch])
-                task.pitch_tag = pitch # slightly hacky pitch_tag makes 'remove_existing_tasks_for_pitch' easy to implement
+                task.uniquetag = pitch # only allow 1 task to run at a time for one pitch
                 self.__scheduler.add(task)
-
-    def remove_existing_tasks_for_pitch(self, pitch):
-        for task in self.__scheduler.tasks:
-            if hasattr(task, 'pitch_tag') and task.pitch_tag == pitch:
-                self.__scheduler.remove(task)
-
 
 def evenly_spaced_mapping(first, second):
     """ Creates a map between elements of first array and second array. If first and second aren't the same

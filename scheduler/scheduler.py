@@ -7,6 +7,10 @@ logger = logging.getLogger("global")
 class Task(ABC):
     """A "lightful" task gets scheduled to tick once per main loop until cfinished"""
 
+    # if a unique id is set, then only one task can be running at a time using this id.
+    # any tasks being scheduled will cancel existing tasks with matching id.
+    uniquetag = None
+
     @abstractmethod
     def start(self):
         pass
@@ -33,9 +37,20 @@ class Scheduler:
         self.__started = False
 
     def add(self, task):
-        """add a light effect"""
+        """add a task"""
+
+        if task.uniquetag is not None:
+            self.remove_by_tag(task.uniquetag)
+
         self.tasks.append(task)
         task.start()
+
+    def remove_by_tag(self, tag):
+        """ remove task by its tag """
+        for task in self.tasks:
+            if task.uniquetag == tag:
+                self.tasks.remove(task)
+                return
 
     def remove(self, task):
         if task in self.tasks: # not efficient, but unlikely to ever matter
