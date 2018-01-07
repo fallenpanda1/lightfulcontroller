@@ -58,6 +58,8 @@ class MeteorLightEffect(LightEffect):
         meteor_head_length = 0.05
         meteor_tail_length = 0.2
 
+        progress *= meteor_tail_length + 1 # allow fireball to fully exit the bottom of the screen
+
         if 0.0 < gradient - progress < meteor_head_length: # meteor head
             alpha = 1 - (gradient - progress) / meteor_head_length
             return self.color.with_alpha(alpha)
