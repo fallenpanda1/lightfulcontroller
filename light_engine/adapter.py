@@ -6,6 +6,7 @@ import threading
 import time
 from pygdisplay.neopixel import NeopixelSimulationPygDrawable
 from color import *
+import lightfulwindows
 
 logger = logging.getLogger("global")
 
@@ -101,10 +102,15 @@ class VirtualArduinoClient:
         thread.daemon = True
         thread.start()
 
-    def begin_pygscreen_simulation(self, pygscreen, lights_show):
-        self.__neopixel_drawable = NeopixelSimulationPygDrawable()
-        pygscreen.display_with_drawable(self.__neopixel_drawable)
+    def start(self, lights_show):
         self.__lights_show = lights_show
+
+        # open virtual window
+        self.virtualpixelwindow = lightfulwindows.VirtualNeopixelWindow(800, 600)
+        self.virtualpixelwindow.start()
+
+    def stop(self):
+        self.virtualpixelwindow.close()
 
     def port_id(self):
         return os.ttyname(self.__slave)
@@ -122,6 +128,8 @@ class VirtualArduinoClient:
         self.__write_to_master("I'm ready! hit me with some setup calls!\n")
 
         setup_complete = False
+
+        # TODO: set up above should happen on a background thread, but scary to do this loop in the background
         while True:
             line = self.__serial_reader.readline()
             if line:
@@ -139,7 +147,7 @@ class VirtualArduinoClient:
                         # little-endian so reverse
                         color_array.append((line[i+2], line[i+1], line[i]))
 
-                    self.__neopixel_drawable.update_with_colors(color_array)
+                    self.virtualpixelwindow.update_with_colors(color_array)
 
                 self.__write_to_master("\n") # got your message!
                 setup_complete = True

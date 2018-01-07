@@ -8,8 +8,9 @@ from light_engine.adapter import ArduinoPixelAdapter, VirtualArduinoClient
 from scheduler.scheduler import *
 from light_engine.light_effect import *
 from shows import *
-from pygdisplay.screen import PygScreen
 import profiler
+from pymaybe import maybe
+import lightfulwindows
 
 logger = logging.getLogger("global")
 
@@ -29,8 +30,6 @@ def main_loop(window):
     curses_window.addstr("Setting up program...\n")
     curses_window.refresh()
 
-    pygscreen = PygScreen()
-
     # set up logging
     logger.setLevel(logging.DEBUG)
     handler = CursesLogHandler(curses_window)
@@ -40,7 +39,7 @@ def main_loop(window):
 
     # parse command line options
     parser = argparse.ArgumentParser(description="Lightful Piano Controller Script")
-    parser.add_argument("--virtualarduino", action='store_true')
+    parser.add_argument("--virtualpixels", action='store_true')
     args = parser.parse_args()
 
     # set up Midi listener
@@ -56,20 +55,19 @@ def main_loop(window):
     num_pixels = 100
     serial_port_id = '/dev/tty.usbmodem1411' # TODO: hardcoded for now, make configurable later
     virtual_client = None
-    if args.virtualarduino:
-        logger.info("using virtual arduino")
+    if args.virtualpixels:
+        logger.info("using simulated arduino/neopixels")
         virtual_client = VirtualArduinoClient(num_pixels = num_pixels)
         serial_port_id = virtual_client.port_id()
     pixel_adapter = ArduinoPixelAdapter(serial_port_id = serial_port_id, baud_rate = 115200, num_pixels = num_pixels)
     pixel_adapter.start()
 
     # create show
-    lights_show = hanging_door_lights_show.HangingDoorLightsShow(scheduler, pixel_adapter, pygscreen, monitor)
+    lights_show = hanging_door_lights_show.HangingDoorLightsShow(scheduler, pixel_adapter, monitor)
 
     # TODO: maybe have a protocol a light show can implement to describe its simulation layout
-    if virtual_client is not None:
-        # configure neopixel simulator with light show's data
-        virtual_client.begin_pygscreen_simulation(pygscreen, lights_show)
+    # configure neopixel simulator with light show's data
+    maybe(virtual_client).start(lights_show)
 
     curses_window.addstr("\nDone setting up\n\n")
     curses_window.addstr("Keyboard Shortcuts:\n")
@@ -84,7 +82,7 @@ def main_loop(window):
     midi_player = None
 
     p = profiler.Profiler()
-    p.enabled = False
+    p.enabled = True
 
     while True:
         p.avg("loop start")
@@ -112,9 +110,10 @@ def main_loop(window):
         elif character == ord('t'):
             pixel_adapter.push_pixels()
         elif character == ord('q'):
-            lights_show.clear_lights()
+            # lights_show.clear_lights() comment for now until lightfulwindow implemented
             pixel_adapter.stop()
             monitor.stop()
+            maybe(virtual_client).stop()
             exit()
         elif character == ord('r'):
             if midi_recorder == None:
@@ -132,9 +131,11 @@ def main_loop(window):
             midi_player.play()
             lights_show.reset_lights()
         p.avg("character read")
-        # render loop for rain
-        pygscreen.draw_loop()
-        p.avg("pygscreen rendering")
+        
+        # update & render loop for lightful windows
+        lightfulwindows.tick()
+
+        p.avg("lightful window rendering")
 
         time.sleep(0.001) # have to sleep at least a short time to allow any other threads to do their stuff (e.g. midi player)
 

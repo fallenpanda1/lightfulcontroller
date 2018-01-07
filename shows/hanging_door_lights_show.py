@@ -3,7 +3,6 @@ logger = logging.getLogger("global")
 
 from light_engine.light_effect import *
 from color import *
-from pygdisplay.screen import PygScreen
 from pygdisplay.rain import RainPygDrawable
 from pygdisplay.neopixel import NeopixelSimulationPygDrawable
 import copy
@@ -11,13 +10,12 @@ import copy
 class HangingDoorLightsShow:
     """Just for debugging"""
 
-    def __init__(self, scheduler, pixel_adapter, pygscreen, midi_monitor):
+    def __init__(self, scheduler, pixel_adapter, midi_monitor):
         self.__scheduler = scheduler
         self.__pixel_adapter = pixel_adapter
         self.__midi_monitor = midi_monitor
         self.__midi_monitor.register(self)
         self.__rain_drawable = None# RainPygDrawable()
-        # pygscreen.display_with_drawable(self.__neopixel_drawable)
 
         self.row1 = LightSection(range(10, 30))
         self.row2 = LightSection(list(reversed(range(30, 50))))
