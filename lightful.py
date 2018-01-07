@@ -82,7 +82,7 @@ def main_loop(window):
     midi_player = None
 
     p = profiler.Profiler()
-    p.enabled = True
+    p.enabled = False # True to enable time profile logs of main run loop
 
     while True:
         p.avg("loop start")
