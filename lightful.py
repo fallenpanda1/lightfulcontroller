@@ -133,7 +133,7 @@ def main_loop(window):
         p.avg("character read")
         
         # update & render loop for lightful windows
-        lightfulwindows.tick()
+        maybe(lightfulwindows).tick()
 
         p.avg("lightful window rendering")
 
