@@ -3,8 +3,6 @@ logger = logging.getLogger("global")
 
 from light_engine.light_effect import *
 from color import *
-from pygdisplay.rain import RainPygDrawable
-from pygdisplay.neopixel import NeopixelSimulationPygDrawable
 import copy
 
 class HangingDoorLightsShow:
@@ -15,7 +13,6 @@ class HangingDoorLightsShow:
         self.__pixel_adapter = pixel_adapter
         self.__midi_monitor = midi_monitor
         self.__midi_monitor.register(self)
-        self.__rain_drawable = None# RainPygDrawable()
 
         self.row1 = LightSection(range(10, 30))
         self.row2 = LightSection(list(reversed(range(30, 50))))
@@ -79,9 +76,6 @@ class HangingDoorLightsShow:
             pitch = rtmidi_message.getNoteNumber()
             if pitch in self.note_map:
                 self.__scheduler.add(copy.copy(self.note_map[pitch]))
-            
-            if self.__rain_drawable != None:
-                self.__rain_drawable.add_raindrop_note(1.0 * (pitch % 10) / 10)
 
 def evenly_spaced_mapping(first, second):
     """ Creates a map between elements of first array and second array. If first and second aren't the same

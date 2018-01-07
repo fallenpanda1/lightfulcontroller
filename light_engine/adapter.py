@@ -4,7 +4,6 @@ import logging
 import os, pty
 import threading
 import time
-from pygdisplay.neopixel import NeopixelSimulationPygDrawable
 from color import *
 import lightfulwindows
 
@@ -95,7 +94,6 @@ class VirtualArduinoClient:
         self.__serial_reader = os.fdopen(self.__master, "rb")
         self.__serial_writer = os.fdopen(self.__master, "wb")
         self.__num_pixels = num_pixels # todo: remove this and determine num_pixels from the protocol itself instead
-        self.__neopixel_drawable = None
         self.__lights_show = None
 
         thread = threading.Thread(target=self.__loop, args=())
@@ -139,7 +137,6 @@ class VirtualArduinoClient:
                 time.sleep(0.000030 * self.__num_pixels)
 
                 # TODO: wait for expected # of lines, then convert to a color array
-                #self.__neopixel_drawable()
                 if setup_complete == True:
                     color_array = []
                     for i in range(int(len(line) / 4)):
