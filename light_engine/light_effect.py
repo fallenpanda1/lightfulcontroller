@@ -8,19 +8,37 @@ import math
 logger = logging.getLogger("global")
 
 class LightSection:
-    def __init__(self, positions):
+    def __init__(self, positions, gradients=None):
+        if isinstance(positions, range):
+            positions = list(positions)
+
         self.positions = positions
         length = len(positions)
 
-        # create a list ranging from 0 to 1
-        # todo: make this customizable later
-        self.gradients = list(map(operator.truediv, list(range(length)), [length] * length))
+        if gradients is not None:
+            self.gradients = gradients
+        else:
+            # create a list ranging from 0 to 1
+            self.gradients = list(map(operator.truediv, list(range(length)), [length] * length))
 
     def __str__(self):
         return str(self.positions)
 
     def reversed(self):
-        return LightSection(list(reversed(self.positions)))
+        return LightSection(self.positions, list(reversed(self.gradients)))
+
+    def merged_with(self, othersection):
+        """ Merges two sections without modifying their gradients """
+        combined_positions = self.positions + othersection.positions
+        unaltered_gradients = self.gradients + othersection.gradients
+        return LightSection(combined_positions, gradients=unaltered_gradients)
+
+    def appended_with(self, othersection):
+        """ 'Appends' a section to an existing one with gradients serially combined (TODO: whatever that means?) """ 
+        combined_positions = self.positions + othersection.positions
+        # passing in gradient = None uses the default gradient implementation, which puts othersection
+        # in the gradient section after self
+        return LightSection(combined_positions)
 
 class LightEffect:
 

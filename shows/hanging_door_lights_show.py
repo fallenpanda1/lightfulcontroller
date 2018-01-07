@@ -19,7 +19,9 @@ class HangingDoorLightsShow:
         self.row3 = LightSection(range(60, 80))
         self.row4 = LightSection(list(reversed(range(80, 100))))
         # TODO: rows 1 and 4 are currently being used as tandem meteor rows, not using interleaving
-        self.row1and4 = LightSection(interleave_lists(self.row1.positions, self.row4.positions))
+        self.row1and4 = self.row1.merged_with(self.row4)
+        logger.info(self.row1and4.positions)
+        logger.info(self.row1and4.gradients)
         self.row3and4 = LightSection(flatten_lists([self.row3.positions, self.row4.positions]))
         self.all = LightSection(flatten_lists([self.row1.positions, self.row2.positions, self.row3.positions, self.row4.positions]))
 
