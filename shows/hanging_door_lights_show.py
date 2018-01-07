@@ -75,7 +75,17 @@ class HangingDoorLightsShow:
 
             pitch = rtmidi_message.getNoteNumber()
             if pitch in self.note_map:
-                self.__scheduler.add(copy.copy(self.note_map[pitch]))
+                self.remove_existing_tasks_for_pitch(pitch)
+
+                task = copy.copy(self.note_map[pitch])
+                task.pitch_tag = pitch # slightly hacky pitch_tag makes 'remove_existing_tasks_for_pitch' easy to implement
+                self.__scheduler.add(task)
+
+    def remove_existing_tasks_for_pitch(self, pitch):
+        for task in self.__scheduler.tasks:
+            if hasattr(task, 'pitch_tag') and task.pitch_tag == pitch:
+                self.__scheduler.remove(task)
+
 
 def evenly_spaced_mapping(first, second):
     """ Creates a map between elements of first array and second array. If first and second aren't the same

@@ -23,7 +23,7 @@ class Scheduler:
     """Scheduler for recurring tasks"""
 
     def __init__(self):
-        self.__tasks = []
+        self.tasks = []
         self.__started = False
 
     def start(self):
@@ -34,20 +34,24 @@ class Scheduler:
 
     def add(self, task):
         """add a light effect"""
-        self.__tasks.append(task)
+        self.tasks.append(task)
         task.start()
 
+    def remove(self, task):
+        if task in self.tasks: # not efficient, but unlikely to ever matter
+            self.tasks.remove(task)
+
     def clear(self):
-        self.__tasks.clear()
+        self.tasks.clear()
 
     def tick(self):
         """do the animation!"""
 
         # filter out all finished effects
-        self.__tasks[:] = [task for task in self.__tasks if not task.is_finished()]
+        self.tasks[:] = [task for task in self.tasks if not task.is_finished()]
 
         # TODO: sort the effects in render layer order
-        for task in self.__tasks:
+        for task in self.tasks:
             task.tick()
 
 class DebugTask(Task):
