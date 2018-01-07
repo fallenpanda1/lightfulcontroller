@@ -23,6 +23,7 @@ class LightSection:
         return LightSection(list(reversed(self.positions)))
 
 class LightEffect:
+
     @abstractmethod
     def get_color(self, progress, gradient, velocity):
         """Called for each light effect task tick"""
@@ -54,8 +55,14 @@ class MeteorLightEffect(LightEffect):
         self.tail_length = tail_length # 1 provides a 'standard' length, 0.5 will halve, 2 will double
 
     def get_color(self, progress, gradient, velocity):
-        if 0.0 < gradient - progress < 0.1:
-            alpha = abs((gradient - progress) * 10)
+        meteor_head_length = 0.05
+        meteor_tail_length = 0.2
+
+        if 0.0 < gradient - progress < meteor_head_length: # meteor head
+            alpha = 1 - (gradient - progress) / meteor_head_length
+            return self.color.with_alpha(alpha)
+        elif -meteor_tail_length < gradient - progress <= 0.0: # meteor tail, longer than head
+            alpha = 1 - abs(gradient - progress) / meteor_tail_length
             return self.color.with_alpha(alpha)
         else:
             return self.color.with_alpha(0)
