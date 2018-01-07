@@ -18,7 +18,8 @@ class HangingDoorLightsShow:
         self.row2 = LightSection(list(reversed(range(30, 50))))
         self.row3 = LightSection(range(60, 80))
         self.row4 = LightSection(list(reversed(range(80, 100))))
-        self.row1and2 = LightSection(interleave_lists(self.row1.positions, self.row2.positions))
+        # TODO: rows 1 and 4 are currently being used as tandem meteor rows, not using interleaving
+        self.row1and4 = LightSection(interleave_lists(self.row1.positions, self.row4.positions))
         self.row3and4 = LightSection(flatten_lists([self.row3.positions, self.row4.positions]))
         self.all = LightSection(flatten_lists([self.row1.positions, self.row2.positions, self.row3.positions, self.row4.positions]))
 
@@ -27,18 +28,18 @@ class HangingDoorLightsShow:
 
         # base map
         # TODO: nandemonaiya contains a Bb, which is not a C major note
-        for pitch, light_position in evenly_spaced_mapping(filter_out_non_C_notes(range(36, 66)), self.row2.positions).items():
+        for pitch, light_position in evenly_spaced_mapping(filter_out_non_C_notes(range(36, 70)), self.row2.positions).items():
             task = LightEffectTask(SolidColorLightEffect(color=make_color(220, 200, 60)), LightSection([light_position]), 0.3, self.__pixel_adapter)
             self.note_map[pitch] = MidiOffLightEffectTask(task, pitch, self.__midi_monitor)
 
         # melody map
-        for pitch, light_position in evenly_spaced_mapping(filter_out_non_C_notes(range(67, 90)), self.row3.positions).items():
+        for pitch, light_position in evenly_spaced_mapping(filter_out_non_C_notes(range(70, 92)), self.row3.positions).items():
             task = LightEffectTask(SolidColorLightEffect(color=make_color(220, 200, 60)), LightSection([light_position]), 0.3, self.__pixel_adapter)
             self.note_map[pitch] = MidiOffLightEffectTask(task, pitch, self.__midi_monitor)
 
         # low notes
-        for pitch in [29, 31, 33, 36]:
-            self.note_map[pitch] = LightEffectTask(MeteorLightEffect(color=make_color(220, 200, 60)), self.row1.reversed(), 1.6, self.__pixel_adapter)
+        for pitch in [29, 31, 33, 34, 36]:
+            self.note_map[pitch] = LightEffectTask(MeteorLightEffect(color=make_color(220, 200, 60)), self.row1and4.reversed(), 1.6, self.__pixel_adapter)
 
         self.initialize_lights()
 
