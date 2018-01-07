@@ -136,7 +136,8 @@ class VirtualArduinoClient:
                     color_array = []
                     for i in range(int(len(line) / 4)):
                         i = i * 4
-                        color_array.append((line[i], line[i+1], line[i+2], line[i+3]))
+                        # little-endian so reverse
+                        color_array.append((line[i+2], line[i+1], line[i]))
 
                     self.__neopixel_drawable.update_with_colors(color_array)
 
