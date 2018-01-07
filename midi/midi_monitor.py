@@ -15,19 +15,22 @@ class MidiMonitor:
         
         # lets us send midi messages to the piano
         self.__midi_out = rtmidi.RtMidiOut()
-        try:
-            self.__midi_out.openPort(0)
-        except:
-            pass
+        if ports:
+            try:
+                self.__midi_out.openPort(0)
+            except:
+                logger.error("tried and failed to open midi out on port 0")
+                return
 
-        if not ports:
-            logger.error('no midi input ports found, did not open MIDI connection')
-            #return # TODO: throw an error that this can't be started?
-        try:
-            self.__midi_in.openPort(0)
-        except:
-            pass
-        logger.info("MidiMonitor started... now listening for midi in on port 0: " + self.__midi_in.getPortName(0))
+        if ports:
+            try:
+                self.__midi_in.openPort(0)
+                logger.info("MidiMonitor started... now listening for midi in on port 0: " + self.__midi_in.getPortName(0))
+            except:
+                logger.error("tried and failed to open midi in on port 0")
+                return
+        else:
+            logger.info('no midi input ports found, did not open MIDI connection')
 
     def stop(self):
         self.__midi_in.closePort()
