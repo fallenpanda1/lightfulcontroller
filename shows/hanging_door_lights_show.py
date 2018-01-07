@@ -29,8 +29,8 @@ class HangingDoorLightsShow:
         # TODO: nandemonaiya contains a Bb, which is not a C major note
         for pitch, light_position in evenly_spaced_mapping(filter_out_non_C_notes(range(36, 66)), self.row2.positions).items():
             logger.info("light position!" + str(light_position))
-            task = LightEffectTask(SolidColorLightEffect(color=make_color(220, 200, 60)), LightSection([light_position]), 0.5, self.__pixel_adapter)
-            self.note_map[pitch] = task # MidiOffLightEffectTask(task, pitch, self.__midi_monitor)
+            task = LightEffectTask(SolidColorLightEffect(color=make_color(220, 200, 60)), LightSection([light_position]), 0.3, self.__pixel_adapter)
+            self.note_map[pitch] = MidiOffLightEffectTask(task, pitch, self.__midi_monitor)
 
         # melody map
         for pitch, light_position in evenly_spaced_mapping(filter_out_non_C_notes(range(67, 90)), self.row3.positions).items():
