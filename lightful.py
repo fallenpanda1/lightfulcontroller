@@ -110,7 +110,7 @@ def main_loop(window):
         elif character == ord('t'):
             pixel_adapter.push_pixels()
         elif character == ord('q'):
-            # lights_show.clear_lights() comment for now until lightfulwindow implemented
+            lights_show.clear_lights()
             pixel_adapter.stop()
             monitor.stop()
             maybe(virtual_client).stop()
