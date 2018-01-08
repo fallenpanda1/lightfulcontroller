@@ -18,12 +18,11 @@ class HangingDoorLightsShow:
         self.row2 = LightSection(list(reversed(range(30, 50))))
         self.row3 = LightSection(range(60, 80))
         self.row4 = LightSection(list(reversed(range(80, 100))))
-        # TODO: rows 1 and 4 are currently being used as tandem meteor rows, not using interleaving
+
         self.row1and4 = self.row1.merged_with(self.row4)
-        logger.info(self.row1and4.positions)
-        logger.info(self.row1and4.gradients)
-        self.row3and4 = LightSection(flatten_lists([self.row3.positions, self.row4.positions]))
-        self.all = LightSection(flatten_lists([self.row1.positions, self.row2.positions, self.row3.positions, self.row4.positions]))
+        self.all = LightSection.merge_all([self.row1, self.row2, self.row3, self.row4])
+
+        self.gradient_cross_section = self.all.positions_in_gradient_range(0.04, 0.06)
 
         # mapping between note and light animations
         self.note_map = {}
@@ -104,9 +103,3 @@ def filter_out_non_C_notes(pitch_list):
 def flatten_lists(lists):
     """ [[1, 2, 3], [4, 5, 6]] -> [1, 2, 3, 4, 5, 6] """
     return [item for sublist in lists for item in sublist]
-
-def interleave_lists(list1, list2):
-    """ [0, 0, 0], [1, 1, 1] -> [0, 1, 0, 1, 0, 1]
-    Note: two lists must be the same length
-    """
-    return [val for pair in zip(list1, list2) for val in pair]

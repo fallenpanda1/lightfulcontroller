@@ -40,6 +40,27 @@ class LightSection:
         # in the gradient section after self
         return LightSection(combined_positions)
 
+    def positions_with_gradient(self, value):
+        return self.positions_in_gradient_range(value, value)
+
+    def positions_in_gradient_range(self, min, max):
+        filtered_positions = []
+        for index, position in enumerate(self.positions):
+            gradient = self.gradients[index]
+            if min <= gradient <= max:
+                filtered_positions.append(position)
+        return filtered_positions
+
+    @staticmethod
+    def merge_all(sections): 
+        # not implemented efficiently at all, but doubtful it'll ever matter
+        merged_positions = []
+        merged_gradients = []
+        for section in sections:
+            merged_positions += section.positions
+            merged_gradients += section.gradients
+        return LightSection(merged_positions, merged_gradients)
+
 class LightEffect:
 
     @abstractmethod
