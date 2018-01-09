@@ -11,6 +11,7 @@ from shows import *
 import profiler
 from pymaybe import maybe
 import lightfulwindows
+import rtmidi
 
 logger = logging.getLogger("global")
 
@@ -107,8 +108,6 @@ def main_loop(window):
             pixel_adapter.start()
         elif character == ord('c'):
             pixel_adapter.stop()
-        elif character == ord('t'):
-            pixel_adapter.push_pixels()
         elif character == ord('q'):
             lights_show.clear_lights()
             pixel_adapter.stop()
@@ -130,6 +129,9 @@ def main_loop(window):
             #midi_player = InMemoryMidiPlayer(midi_recorder.in_memory_recording, monitor)
             midi_player.play()
             lights_show.reset_lights()
+        elif character == ord(' '):
+            # hack: send note off on pitch = 0, which represents a special keyboard event, I guess?
+            monitor.send_midi_message(rtmidi.MidiMessage().noteOff(0, 0))
         p.avg("character read")
         
         # update & render loop for lightful windows

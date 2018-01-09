@@ -13,6 +13,7 @@ class HangingDoorLightsShow:
         self.__pixel_adapter = pixel_adapter
         self.__midi_monitor = midi_monitor
         self.__midi_monitor.register(self)
+        self.__is_in_end_mode = False # TODO: this is exactly the kind of thing I don't want to have to do for each song!!
 
         self.row1 = LightSection(range(10, 30))
         self.row2 = LightSection(list(reversed(range(30, 50))))
@@ -21,8 +22,6 @@ class HangingDoorLightsShow:
 
         self.row1and4 = self.row1.merged_with(self.row4)
         self.all = LightSection.merge_all([self.row1, self.row2, self.row3, self.row4])
-
-        self.gradient_cross_section = self.all.positions_in_gradient_range(0.04, 0.06)
 
         # mapping between note and light animations
         self.note_map = {}
@@ -41,6 +40,9 @@ class HangingDoorLightsShow:
         # low notes
         for pitch in [29, 31, 33, 34, 36]:
             self.note_map[pitch] = LightEffectTask(MeteorLightEffect(color=make_color(220, 200, 60)), self.row1and4.reversed(), 1.6, self.__pixel_adapter)
+
+        # high note
+        self.note_map[96] = LightEffectTask(MeteorLightEffect(color=make_color(220, 200, 60)), self.row4, 0.7, self.__pixel_adapter)
 
         self.initialize_lights()
 
@@ -79,6 +81,21 @@ class HangingDoorLightsShow:
                 task = copy.copy(self.note_map[pitch])
                 task.uniquetag = pitch # only allow 1 task to run at a time for one pitch
                 self.__scheduler.add(task)
+        elif rtmidi_message.isNoteOff() and rtmidi_message.getNoteNumber() == 0:
+            # hacky special message
+            self.special_message_received()
+
+    def special_message_received(self):
+        if not self.__is_in_end_mode:
+            logger.info("transitioned to end")
+
+            # keys being played at the end
+            key_range = [36, 43, 48, 64, 67, 71, 74]
+
+            for pitch, position in evenly_spaced_mapping(key_range, range(0, 20)).items():
+                gradient_cross_section = self.all.positions_with_gradient((position + 1) * 1.0 / 20)
+                task = LightEffectTask(SolidColorLightEffect(color=make_color(220, 200, 60)), LightSection(gradient_cross_section), 0.3, self.__pixel_adapter)
+                self.note_map[pitch] = MidiOffLightEffectTask(task, pitch, self.__midi_monitor)
 
 def evenly_spaced_mapping(first, second):
     """ Creates a map between elements of first array and second array. If first and second aren't the same
@@ -99,7 +116,3 @@ def is_valid_C_major_pitch(pitch):
 
 def filter_out_non_C_notes(pitch_list):
     return list(filter(is_valid_C_major_pitch, pitch_list))
-
-def flatten_lists(lists):
-    """ [[1, 2, 3], [4, 5, 6]] -> [1, 2, 3, 4, 5, 6] """
-    return [item for sublist in lists for item in sublist]
