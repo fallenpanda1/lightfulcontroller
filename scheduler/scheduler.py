@@ -62,7 +62,7 @@ class Scheduler:
     def tick(self):
         """do the animation!"""
 
-        # filter out all finished effects
+        # remove all finished effects
         self.tasks[:] = [task for task in self.tasks if not task.is_finished()]
 
         # TODO: sort the effects in render layer order
