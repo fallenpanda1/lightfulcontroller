@@ -28,7 +28,7 @@ class ArduinoPixelAdapter:
         # TODO: Check that it's a specific message?
         logger.info("log 'setup' message: " + str(waiting))
 
-        logger.info("stuff" + str(num_pixels))
+        logger.info("sending num_pixel value to Arduino: " + str(num_pixels))
         self.__serial.write(num_pixels.to_bytes(1, byteorder='little'))
 
         # wait for next line
@@ -123,9 +123,14 @@ class VirtualArduinoClient:
     def __loop(self):
         time.sleep(0.1) # wait a little while for the adapter to be initialized before beginning setup protocol
         logger.info("sending message")
-        self.__write_to_master("I'm ready! hit me with some setup calls!\n")
+        self.__write_to_master("I'm ready! hit me with some setup calls!\n") # communication protocol is currently kind of.. handwavy
+        time.sleep(0.1) # wait for setup calls
+        response_bytes = self.__serial_reader.readline()
+        num_pixels = ord(response_bytes)
+        if num_pixels > 0:
+            logger.info("setup complete! num pixels: " + str(num_pixels))
 
-        setup_complete = False
+        self.__write_to_master("\n") # got your message!
 
         # TODO: set up above should happen on a background thread, but scary to do this loop in the background
         while True:
@@ -136,15 +141,13 @@ class VirtualArduinoClient:
                 # https://learn.adafruit.com/adafruit-neopixel-uberguide/advanced-coding
                 time.sleep(0.000030 * self.__num_pixels)
 
-                # TODO: wait for expected # of lines, then convert to a color array
-                if setup_complete == True:
-                    color_array = []
-                    for i in range(int(len(line) / 4)):
-                        i = i * 4
-                        # little-endian so reverse
-                        color_array.append((line[i+2], line[i+1], line[i]))
+                color_array = []
+                for i in range(int(len(line) / 4)):
+                    i = i * 4
+                    # little-endian so reverse
+                    color_array.append((line[i+2], line[i+1], line[i]))
 
-                    self.virtualpixelwindow.update_with_colors(color_array)
+                self.virtualpixelwindow.update_with_colors(color_array)
 
                 self.__write_to_master("\n") # got your message!
                 setup_complete = True
