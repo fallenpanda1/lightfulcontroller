@@ -2,7 +2,6 @@ import mido
 import time
 import logging
 import rtmidi
-import threading
 import queue
 
 logger = logging.getLogger("global")
@@ -15,7 +14,6 @@ class MidiPlayer:
     def __init__(self, file_name, virtual_midi_monitor): # TODO: rename--maybe virtual sender or something?
         self.file_name = file_name
         self.__midi_out = virtual_midi_monitor
-        self.__midi_message_queue = queue.Queue()
 
     def play(self):
         """ Play the file """
