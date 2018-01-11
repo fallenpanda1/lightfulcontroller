@@ -9,6 +9,8 @@ import lightfulwindows
 
 logger = logging.getLogger("global")
 
+pixel_array = None
+
 class ArduinoPixelAdapter:
     """simple interface for setting NeoPixel lights via Arduino"""
     def __init__(self, serial_port_id, baud_rate, num_pixels):
@@ -17,6 +19,8 @@ class ArduinoPixelAdapter:
 
         # array of pixels, each pixel being represented by an Int32 for R, G, and B (and 8 empty bits on top)
         self.__pixel_array = array("i", ([0] * num_pixels))
+        global pixel_array
+        pixel_array = self.__pixel_array
 
         self.__serial = serial.Serial(serial_port_id, baud_rate)
 
@@ -127,14 +131,14 @@ class VirtualArduinoClient:
         time.sleep(0.1) # wait for setup calls
         response_bytes = self.__serial_reader.readline()
         num_pixels = ord(response_bytes)
-        if num_pixels > 0:
-            logger.info("setup complete! num pixels: " + str(num_pixels))
+        if num_pixels != self.__num_pixels:
+            logger.error("mismatch between initialization num_pixels and actual num_pixels sent over serial setup")
 
         self.__write_to_master("\n") # got your message!
 
         # TODO: set up above should happen on a background thread, but scary to do this loop in the background
         while True:
-            line = self.__serial_reader.readline()
+            line = self.__serial_reader.read(self.__num_pixels * 4)
             if line:
                 # we should simulate the delay of the Arduino actually setting the neopixels. According to docs:
                 # 'One pixel requires 24 bits (8 bits each for red, green blue) — 30 microseconds.'
@@ -147,9 +151,15 @@ class VirtualArduinoClient:
                     # little-endian so reverse
                     color_array.append((line[i+2], line[i+1], line[i]))
 
+                # TODO: there's definitely a mismatch between input and output due to some rounding issues... resolve later
+                # for index, pixel in enumerate(pixel_array):
+                #     color = color_array[index]
+                #     if pixel.r() != color[0] or pixel.g() != color[1] or pixel.b() != color[2]:
+                #         pass
+
                 self.virtualpixelwindow.update_with_colors(color_array)
 
                 self.__write_to_master("\n") # got your message!
                 setup_complete = True
 
-            time.sleep(0.01)
+            time.sleep(0.001)
