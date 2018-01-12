@@ -27,37 +27,33 @@ class HangingDoorLightsShow:
         self.note_map = {}
 
         # base map
-        # TODO: nandemonaiya contains a Bb, which is not a C major note
-        for pitch, light_position in evenly_spaced_mapping(filter_out_non_C_notes(range(36, 70)), self.row2.positions).items():
-            task = LightEffectTask(SolidColorLightEffect(color=make_color(220, 200, 60)), LightSection([light_position]), 0.3, self.__pixel_adapter)
+        for pitch, light_position in evenly_spaced_mapping(range(36, 70), self.row2.positions).items():
+            task = LightEffectTask(SolidColorLightEffect(color=make_color(220, 200, 60)), LightSection([light_position]), 0.6, self.__pixel_adapter)
             self.note_map[pitch] = MidiOffLightEffectTask(task, pitch, self.__midi_monitor)
 
         # melody map
-        for pitch, light_position in evenly_spaced_mapping(filter_out_non_C_notes(range(70, 92)), self.row3.positions).items():
-            task = LightEffectTask(SolidColorLightEffect(color=make_color(220, 200, 60)), LightSection([light_position]), 0.3, self.__pixel_adapter)
+        for pitch, light_position in evenly_spaced_mapping(filter_out_non_C_notes(range(70, 97)), self.row3.positions).items():
+            task = LightEffectTask(SolidColorLightEffect(color=make_color(220, 200, 60)), LightSection([light_position]), 0.6, self.__pixel_adapter)
             self.note_map[pitch] = MidiOffLightEffectTask(task, pitch, self.__midi_monitor)
 
         # low notes
         for pitch in [29, 31, 33, 34, 36]:
             self.note_map[pitch] = LightEffectTask(MeteorLightEffect(color=make_color(220, 200, 60)), self.row1and4.reversed(), 1.6, self.__pixel_adapter)
 
-        # high note
-        self.note_map[96] = LightEffectTask(MeteorLightEffect(color=make_color(220, 200, 60)), self.row4, 0.7, self.__pixel_adapter)
-
         self.initialize_lights()
 
     def initialize_lights(self):
         # add base layer for scheduler
-        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 60, 30)), self.row1, 10, self.__pixel_adapter), progress_offset = 0)
+        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 60, 30)), self.row1, 7, self.__pixel_adapter), progress_offset = 0)
         self.__scheduler.add(base_layer_effect)
 
-        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 60, 30)), self.row2, 10, self.__pixel_adapter), progress_offset = 0.2)
+        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 60, 30)), self.row2, 7, self.__pixel_adapter), progress_offset = 0.1)
         self.__scheduler.add(base_layer_effect)
 
-        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 60, 30)), self.row3, 10, self.__pixel_adapter), progress_offset = 0.4)
+        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 60, 30)), self.row3, 7, self.__pixel_adapter), progress_offset = 0.2)
         self.__scheduler.add(base_layer_effect)
 
-        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 60, 30)), self.row4, 10, self.__pixel_adapter), progress_offset = 0.6)
+        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(0, 35, 50), color2=make_color(0, 60, 30)), self.row4, 7, self.__pixel_adapter), progress_offset = 0.3)
         self.__scheduler.add(base_layer_effect)
 
     def reset_lights(self):
@@ -66,6 +62,7 @@ class HangingDoorLightsShow:
 
     def clear_lights(self):
         # TODO: this should be shareable between light shows
+        self.__scheduler.clear()
         self.__scheduler.add(LightEffectTask(SolidColorLightEffect(color=make_color(0, 0, 0)), self.all, 1, self.__pixel_adapter))
         self.__scheduler.tick()
         self.__pixel_adapter.wait_for_ready_state()
