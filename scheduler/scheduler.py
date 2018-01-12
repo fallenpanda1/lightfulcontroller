@@ -12,15 +12,15 @@ class Task(ABC):
     uniquetag = None
 
     @abstractmethod
-    def start(self):
+    def start(self, time):
         pass
 
     @abstractmethod
-    def tick(self):
+    def tick(self, time):
         pass
 
     @abstractmethod
-    def is_finished(self):
+    def is_finished(self, time):
         pass
 
 class Scheduler:
@@ -39,11 +39,13 @@ class Scheduler:
     def add(self, task):
         """add a task"""
 
+        currenttime = time.time()
+
         if task.uniquetag is not None:
             self.remove_by_tag(task.uniquetag)
 
         self.tasks.append(task)
-        task.start()
+        task.start(currenttime)
 
     def remove_by_tag(self, tag):
         """ remove task by its tag """
@@ -62,13 +64,14 @@ class Scheduler:
     def tick(self):
         """do the animation!"""
 
+        currenttime = time.time()
+
         # remove all finished effects
-        self.tasks[:] = [task for task in self.tasks if not task.is_finished()]
+        self.tasks[:] = [task for task in self.tasks if not task.is_finished(currenttime)]
 
-        # TODO: sort the effects in render layer order
+        # TODO: sort the effects in render layer order - note: I think because I'm not doing this correctly there's a bug with row1 turning all yellow
         for task in self.tasks:
-            task.tick()
-
+            task.tick(currenttime)
 
     def print_state(self):
         """ Prints scheduler state (e.g. active tasks) """

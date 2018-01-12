@@ -1,4 +1,3 @@
-import time
 from scheduler.scheduler import Task
 import logging
 from abc import ABC, abstractmethod
@@ -128,23 +127,22 @@ class LightEffectTask(Task):
         self.duration = duration
         self.light_adapter = light_adapter
 
-    def start(self):
-        # todo: maybe it's better to have the scheduler manage times
-        self._start_time = time.time()
+    def start(self, time):
+        self._start_time = time
 
-    def tick(self):
+    def tick(self, time):
         velocity = 1.0 * len(self.section.positions) / self.duration
         for index, position in enumerate(self.section.positions):
             gradient = self.section.gradients[index]
-            new_color = self.effect.get_color(self.progress(), gradient, velocity)
+            new_color = self.effect.get_color(self.progress(time), gradient, velocity)
             existing_color = self.light_adapter.get_color(position)
             self.light_adapter.set_color(position, new_color.blended_with(existing_color))
 
-    def progress(self):
-        return min((time.time() - self._start_time) / self.duration, 1)
+    def progress(self, time):
+        return min((time - self._start_time) / self.duration, 1)
 
-    def is_finished(self):
-        return self.progress() == 1
+    def is_finished(self, time):
+        return self.progress(time) == 1
 
 class RepeatingTask(Task):
     def __init__(self, task, progress_offset=0.0):
@@ -152,25 +150,25 @@ class RepeatingTask(Task):
         self.progress_offset = progress_offset
         self.task = task
 
-    def start(self):
-        self.task.start()
+    def start(self, time):
+        self.task.start(time)
         self.task._start_time -= self.task.duration * self.progress_offset
 
     def stop_repeating(self):
         self.__repeating = False
 
-    def tick(self):
-        self.task.tick()
+    def tick(self, time):
+        self.task.tick(time)
 
-    def progress(self):
-        return self.task.progress()
+    def progress(self, time):
+        return self.task.progress(time)
 
-    def is_finished(self):
-        if self.__repeating and self.task.is_finished():
-            self.task._start_time = time.time()
+    def is_finished(self, time):
+        if self.__repeating and self.task.is_finished(time):
+            self.task._start_time = time
             return False
 
-        return self.task.is_finished()
+        return self.task.is_finished(time)
 
 class MidiOffLightEffectTask(LightEffectTask):
     """A special light effect task that reacts to the state of a particular MIDI note. 
@@ -180,8 +178,8 @@ class MidiOffLightEffectTask(LightEffectTask):
         self.pitch = pitch
         self.__midi_monitor = midi_monitor
 
-    def start(self):
-        self.task.start()
+    def start(self, time):
+        self.task.start(time)
         self.__midi_monitor.register(self)
         self.__note_off_received = False
 
@@ -190,14 +188,14 @@ class MidiOffLightEffectTask(LightEffectTask):
             self.__note_off_received = True
             self.__midi_monitor.unregister(self)
 
-    def tick(self):
+    def tick(self, time):
         if not self.__note_off_received:
-            self.task._start_time = time.time() # TODO: sanity check that this isn't a big performance hit
+            self.task._start_time = time
 
-        self.task.tick()
+        self.task.tick(time)
 
-    def progress(self):
-        return self.task.progress()
+    def progress(self, time):
+        return self.task.progress(time)
 
-    def is_finished(self):
-        return self.task.is_finished()
+    def is_finished(self, time):
+        return self.task.is_finished(time)
