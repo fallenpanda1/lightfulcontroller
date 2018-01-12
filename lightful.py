@@ -122,6 +122,8 @@ def main_loop(window):
             else:
                 midi_recorder.stop() # TODO: maybe fork into cancel vs save?
                 midi_recorder = None
+        elif character == ord('l'):
+            scheduler.print_state()
         elif character >= ord('1') and character <= ord('9'):
             monitor.send_virtual_note(offset = character - ord('1'))
         elif character == ord('p'):

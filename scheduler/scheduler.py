@@ -69,9 +69,9 @@ class Scheduler:
         for task in self.tasks:
             task.tick()
 
-class DebugTask(Task):
-    def tick(self):
-        logger.info("tick!")
 
-    def is_finished(self):
-        return False
+    def print_state(self):
+        """ Prints scheduler state (e.g. active tasks) """
+        logger.info("scheduler state:")
+        for task in self.tasks:
+            logger.info(" " + str(task))
