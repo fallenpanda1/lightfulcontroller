@@ -85,7 +85,8 @@ class GradientLightEffect(LightEffect):
         self.color2 = color2
 
     def get_color(self, progress, gradient, velocity):
-        alpha = math.sin((progress - gradient / 2) * math.pi * 2) / 2 + 0.5
+        period = 3 # value of 2 would show whole sin wave on screen, value of 4 would show half sine wave
+        alpha = math.sin((progress - 1.0 * gradient / period) * math.pi * 2) / 2 + 0.5
         return self.color1.with_alpha(alpha).blended_with(self.color2)
 
 class MeteorLightEffect(LightEffect):
@@ -95,7 +96,7 @@ class MeteorLightEffect(LightEffect):
 
     def get_color(self, progress, gradient, velocity):
         meteor_head_length = 0.05
-        meteor_tail_length = 0.2
+        meteor_tail_length = self.tail_length * 0.2
 
         progress *= meteor_tail_length + 1 # allow fireball to fully exit the bottom of the screen
 
