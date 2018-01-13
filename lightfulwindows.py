@@ -1,35 +1,37 @@
-import random
-import sys
-
-from pyglet.gl import *
-from pyglet import font, graphics, window, image, sprite
+from pyglet.gl import pyglet
+from pyglet import graphics, window, image, sprite
 import time
 import logging
 logger = logging.getLogger("global")
 
 """
-REMINDER: On macOS, pyglet throws some sort of "ApplePersistenceIgnoreState" when being shut down
-seems harmless, suppress by running 'defaults write org.python.python ApplePersistenceIgnoreState NO' command line.
+REMINDER: On macOS, pyglet throws some sort of "ApplePersistenceIgnoreState"
+when being shut down. Seems harmless.. suppress by running 'defaults write
+org.python.python ApplePersistenceIgnoreState NO' command line.
 """
 
 MAX_PARTICLES = 2000
 MAX_ADD_PARTICLES = 100
 GRAVITY = -100
 
-# global tick for all Pyglet windows
+
 def tick():
+    """global tick for all Pyglet windows"""
     pyglet.clock.tick()
 
-    for window in pyglet.app.windows:
-        window.switch_to()
-        window.dispatch_events()
-        window.dispatch_event('on_draw')
-        window.flip()
+    for win in pyglet.app.windows:
+        win.switch_to()
+        win.dispatch_events()
+        win.dispatch_event('on_draw')
+        win.flip()
 
 # global close of all Pyglet windows
+
+
 def exit():
-    for window in pyglet.app.windows:
-        window.close()
+    for win in pyglet.app.windows:
+        win.close()
+
 
 class VirtualNeopixelWindow(window.Window):
     """ TODO: Fill me in """
@@ -44,32 +46,39 @@ class VirtualNeopixelWindow(window.Window):
         # set up pixels! (just 10x10 grid for now)
         rows = 20
         cols = 4
-        # remember that rows counterintuitively corresponds to height, cols to width
-        row_increment = 1.0 * self.height / (rows + 0.25) # add 2 for buffer space for rows and cols
+        # remember that rows counterintuitively corresponds to height, cols to
+        # width
+        # add 2 for buffer space for rows and cols
+        row_increment = 1.0 * self.height / (rows + 0.25)
         col_increment = 1.0 * self.width / (cols + 0.25)
         for x in range(0, cols):
             for y in range(0, rows):
-                
-                # for odd columns, the light strip is reversed downward, so flip y position
+
+                # for odd columns, the light strip is reversed downward, so
+                # flip y position
                 if x % 2 == 1:
                     y = rows - y - 1
 
-                xpos = col_increment * (x + 0.25) # add one so don't start at edge of screen
-                ypos = row_increment * (y + 0.25) # add one so don't start at edge of screen
+                # add one so don't start at edge of screen
+                xpos = col_increment * (x + 0.25)
+                # add one so don't start at edge of screen
+                ypos = row_increment * (y + 0.25)
 
-                self.particle_sprites.append(sprite.Sprite(self.particle_image, x=xpos, y=ypos, batch=self.batch))
+                self.particle_sprites.append(sprite.Sprite(
+                    self.particle_image, x=xpos, y=ypos, batch=self.batch))
 
     def on_draw(self):
         current_time = time.time()
         if current_time >= self.time_to_draw_next_frame:
             self.clear()
             self.batch.draw()
-            self.time_to_draw_next_frame = current_time + 1.0 / 60 # 60 frames per second
+            fps = 60
+            self.time_to_draw_next_frame = current_time + 1.0 / fps
 
     # todo: this is happening on separate thread so might cause problems
     def update_with_colors(self, color_array):
-        # remove invalid colors since I accidentally added useless pixels in hanging_door show
-        # get rid of first 10 and 50-60 (dead pixels)
+        # remove invalid colors since I accidentally added useless pixels in
+        # hanging_door show get rid of first 10 and 50-60 (dead pixels)
         new_color_array = color_array[10:50]
         new_color_array.extend(color_array[60:])
         num_sprites = len(self.particle_sprites)

@@ -2,6 +2,7 @@ import rtmidi
 import logging
 logger = logging.getLogger("global")
 
+
 class MidiMonitor:
 
     def __init__(self):
@@ -12,7 +13,7 @@ class MidiMonitor:
 
     def start(self):
         ports = range(self.__midi_in.getPortCount())
-        
+
         # lets us send midi messages to the piano
         self.__midi_out = rtmidi.RtMidiOut()
         if ports:
@@ -25,12 +26,14 @@ class MidiMonitor:
         if ports:
             try:
                 self.__midi_in.openPort(0)
-                logger.info("MidiMonitor started... now listening for midi in on port 0: " + self.__midi_in.getPortName(0))
+                logger.info("MidiMonitor started... now listening for midi in "
+                            "on port 0: " + self.__midi_in.getPortName(0))
             except:
                 logger.error("tried and failed to open midi in on port 0")
                 return
         else:
-            logger.info('no midi input ports found, did not open MIDI connection')
+            logger.info(
+                'no midi input ports found, did not open MIDI connection')
 
     def stop(self):
         self.__midi_in.closePort()
@@ -38,7 +41,7 @@ class MidiMonitor:
     def listen_loop(self):
         # process all waiting midi input
         while True:
-            rtmidi_message = self.__midi_in.getMessage(0) # some timeout in ms
+            rtmidi_message = self.__midi_in.getMessage(0)  # some timeout in ms
             if rtmidi_message is None:
                 return
 
@@ -54,10 +57,11 @@ class MidiMonitor:
             observer.received_midi(rtmidi_message)
 
     def register(self, observer):
-        """ Register an observer for handling incoming MIDI events (multiple can be registered) """
-        if not observer in self.__observers:
+        """ Register an observer for handling incoming MIDI events (multiple
+        can be registered) """
+        if observer not in self.__observers:
             self.__observers.append(observer)
- 
+
     def unregister(self, observer):
         """ Unregister an observer """
         if observer in self.__observers:
