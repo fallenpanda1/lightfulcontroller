@@ -33,31 +33,50 @@ class HangingDoorLightsShow:
         self.note_map = {}
 
         # base map
-        for pitch, light_position in evenly_spaced_mapping(range(36, 70), self.row2.positions).items():
-            task = LightEffectTask(SolidColorLightEffect(color=make_color(
-                220, 200, 60)), LightSection([light_position]), 0.6, self.__pixel_adapter)
+        pitches_to_lights = evenly_spaced_mapping(
+            first=range(36, 70),
+            second=self.row2.positions)
+        for pitch, light_position in pitches_to_lights.items():
+            task = LightEffectTask(
+                effect=SolidColorLightEffect(color=make_color(220, 200, 60)),
+                section=LightSection([light_position]),
+                duration=0.6,
+                light_adapter=self.__pixel_adapter)  # how ugly is DI?
             self.note_map[pitch] = MidiOffLightEffectTask(
                 task, pitch, self.__midi_monitor)
 
         # melody map
-        for pitch, light_position in evenly_spaced_mapping(filter_out_non_C_notes(range(70, 97)), self.row3.positions).items():
-            task = LightEffectTask(SolidColorLightEffect(color=make_color(
-                220, 200, 60)), LightSection([light_position]), 0.6, self.__pixel_adapter)
+        pitches_to_lights = evenly_spaced_mapping(
+            first=filter_out_non_C_notes(range(70, 97)),
+            second=self.row3.positions)
+        for pitch, light_position in pitches_to_lights.items():
+            task = LightEffectTask(
+                effect=SolidColorLightEffect(color=make_color(220, 200, 60)),
+                section=LightSection([light_position]),
+                duration=0.6,
+                light_adapter=self.__pixel_adapter)
             self.note_map[pitch] = MidiOffLightEffectTask(
                 task, pitch, self.__midi_monitor)
 
         # low notes
         for pitch in [29, 31, 33, 34, 36]:
-            self.note_map[pitch] = LightEffectTask(MeteorLightEffect(color=make_color(
-                220, 200, 60)), self.row1and4.reversed(), 1.6, self.__pixel_adapter)
+            self.note_map[pitch] = LightEffectTask(
+                effect=MeteorLightEffect(color=make_color(220, 200, 60)),
+                section=self.row1and4.reversed(),
+                duration=1.6,
+                light_adapter=self.__pixel_adapter)
 
         self.initialize_lights()
 
     def initialize_lights(self):
         # add base layer for scheduler
-        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(
-            0, 35, 50), color2=make_color(0, 60, 30)), self.row1, 7, self.__pixel_adapter), progress_offset=0)
-        self.__scheduler.add(base_layer_effect)
+        base_layer_row1 = LightEffectTask(
+            effect=GradientLightEffect(color1=make_color(0, 35, 50),
+                                       color2=make_color(0, 60, 30)),
+            section=self.row1,
+            duration=7,
+            light_adapter=self.__pixel_adapter)
+        self.__scheduler.add(RepeatingTask(base_layer_row1, progress_offset=0))
 
         base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(
             0, 35, 50), color2=make_color(0, 60, 30)), self.row2, 7, self.__pixel_adapter), progress_offset=0.1)
