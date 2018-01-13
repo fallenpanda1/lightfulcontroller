@@ -1,12 +1,18 @@
 import logging
 from light_engine.light_effect import (
-    LightSection, LightEffectTask, SolidColorLightEffect,
-    MidiOffLightEffectTask, MeteorLightEffect, GradientLightEffect,
-    RepeatingTask)
-from color import *
+    LightSection, LightEffectTask, LightEffectTaskFactory,
+    MidiOffLightEffectTask, RepeatingTask)
+from light_engine.light_effect import SolidColor, Meteor, Gradient
+from color import make_color
 import copy
 
 logger = logging.getLogger("global")
+
+# background is a blue/green animating gradient
+BLUE_BG = make_color(0, 35, 50)
+GREEN_BG = make_color(0, 60, 30)
+YELLOW = make_color(220, 200, 60)
+
 
 class HangingDoorLightsShow:
     """Just for debugging"""
@@ -16,6 +22,7 @@ class HangingDoorLightsShow:
         self.__pixel_adapter = pixel_adapter
         self.__midi_monitor = midi_monitor
         self.__midi_monitor.register(self)
+        self.lightfactory = LightEffectTaskFactory(self.__pixel_adapter)
         # TODO: this is exactly the kind of thing I don't want to have to do
         # for each song!!
         self.__is_in_end_mode = False
@@ -37,11 +44,11 @@ class HangingDoorLightsShow:
             first=range(36, 70),
             second=self.row2.positions)
         for pitch, light_position in pitches_to_lights.items():
-            task = LightEffectTask(
-                effect=SolidColorLightEffect(color=make_color(220, 200, 60)),
+            task = self.lightfactory.task(
+                effect=SolidColor(color=YELLOW),
                 section=LightSection([light_position]),
-                duration=0.6,
-                light_adapter=self.__pixel_adapter)  # how ugly is DI?
+                duration=0.6
+            )
             self.note_map[pitch] = MidiOffLightEffectTask(
                 task, pitch, self.__midi_monitor)
 
@@ -50,45 +57,57 @@ class HangingDoorLightsShow:
             first=filter_out_non_C_notes(range(70, 97)),
             second=self.row3.positions)
         for pitch, light_position in pitches_to_lights.items():
-            task = LightEffectTask(
-                effect=SolidColorLightEffect(color=make_color(220, 200, 60)),
+            task = self.lightfactory.task(
+                effect=SolidColor(color=YELLOW),
                 section=LightSection([light_position]),
-                duration=0.6,
-                light_adapter=self.__pixel_adapter)
+                duration=0.6
+            )
             self.note_map[pitch] = MidiOffLightEffectTask(
                 task, pitch, self.__midi_monitor)
 
         # low notes
         for pitch in [29, 31, 33, 34, 36]:
-            self.note_map[pitch] = LightEffectTask(
-                effect=MeteorLightEffect(color=make_color(220, 200, 60)),
+            self.note_map[pitch] = self.lightfactory.task(
+                effect=Meteor(color=YELLOW),
                 section=self.row1and4.reversed(),
-                duration=1.6,
-                light_adapter=self.__pixel_adapter)
+                duration=1.6
+            )
 
         self.initialize_lights()
 
     def initialize_lights(self):
         # add base layer for scheduler
-        base_layer_row1 = LightEffectTask(
-            effect=GradientLightEffect(color1=make_color(0, 35, 50),
-                                       color2=make_color(0, 60, 30)),
+        base_layer_row1 = self.lightfactory.repeating_task(
+            effect=Gradient(color1=BLUE_BG, color2=GREEN_BG),
             section=self.row1,
             duration=7,
-            light_adapter=self.__pixel_adapter)
-        self.__scheduler.add(RepeatingTask(base_layer_row1, progress_offset=0))
+            progress_offset=0
+        )
+        self.__scheduler.add(base_layer_row1)
 
-        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(
-            0, 35, 50), color2=make_color(0, 60, 30)), self.row2, 7, self.__pixel_adapter), progress_offset=0.1)
-        self.__scheduler.add(base_layer_effect)
+        base_layer_row2 = self.lightfactory.repeating_task(
+            effect=Gradient(color1=BLUE_BG, color2=GREEN_BG),
+            section=self.row2,
+            duration=7,
+            progress_offset=0.1
+        )
+        self.__scheduler.add(base_layer_row2)
 
-        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(
-            0, 35, 50), color2=make_color(0, 60, 30)), self.row3, 7, self.__pixel_adapter), progress_offset=0.2)
-        self.__scheduler.add(base_layer_effect)
+        base_layer_row3 = self.lightfactory.repeating_task(
+            effect=Gradient(color1=BLUE_BG, color2=GREEN_BG),
+            section=self.row3,
+            duration=7,
+            progress_offset=0.2
+        )
+        self.__scheduler.add(base_layer_row3)
 
-        base_layer_effect = RepeatingTask(LightEffectTask(GradientLightEffect(color1=make_color(
-            0, 35, 50), color2=make_color(0, 60, 30)), self.row4, 7, self.__pixel_adapter), progress_offset=0.3)
-        self.__scheduler.add(base_layer_effect)
+        base_layer_row4 = self.lightfactory.repeating_task(
+            effect=Gradient(color1=BLUE_BG, color2=GREEN_BG),
+            section=self.row4,
+            duration=7,
+            progress_offset=0.3
+        )
+        self.__scheduler.add(base_layer_row4)
 
     def reset_lights(self):
         self.__scheduler.clear()
@@ -97,8 +116,10 @@ class HangingDoorLightsShow:
     def clear_lights(self):
         # TODO: this should be shareable between light shows
         self.__scheduler.clear()
-        self.__scheduler.add(LightEffectTask(SolidColorLightEffect(
-            color=make_color(0, 0, 0)), self.all, 1, self.__pixel_adapter))
+        self.__scheduler.add(self.lightfactory.task(
+            effect=SolidColor(color=make_color(0, 0, 0)),
+            section=self.all,
+            duration=1))
         self.__scheduler.tick()
         self.__pixel_adapter.wait_for_ready_state()
         self.__pixel_adapter.push_pixels()
@@ -111,7 +132,8 @@ class HangingDoorLightsShow:
             pitch = rtmidi_message.getNoteNumber()
             if pitch in self.note_map:
                 task = copy.copy(self.note_map[pitch])
-                task.uniquetag = pitch  # only allow 1 task to run at a time for one pitch
+                # only allow 1 task to run at a time for one pitch
+                task.uniquetag = pitch
                 self.__scheduler.add(task)
         elif rtmidi_message.isNoteOff() and rtmidi_message.getNoteNumber() == 0:
             # hacky special message
@@ -124,18 +146,24 @@ class HangingDoorLightsShow:
             # keys being played at the end
             key_range = [36, 43, 48, 64, 67, 71, 74]
 
-            for pitch, position in evenly_spaced_mapping(key_range, range(0, 20)).items():
+            final_chord_mapping = evenly_spaced_mapping(
+                key_range, range(0, 20))
+            for pitch, position in final_chord_mapping.items():
                 gradient_cross_section = self.all.positions_with_gradient(
                     (position + 1) * 1.0 / 20)
-                task = LightEffectTask(SolidColorLightEffect(color=make_color(
-                    220, 200, 60)), LightSection(gradient_cross_section), 0.3, self.__pixel_adapter)
+                task = self.lightfactory.task(
+                    effect=SolidColor(color=make_color(YELLOW)),
+                    section=LightSection(gradient_cross_section),
+                    duration=0.3
+                )
                 self.note_map[pitch] = MidiOffLightEffectTask(
                     task, pitch, self.__midi_monitor)
 
 
 def evenly_spaced_mapping(first, second):
-    """ Creates a map between elements of first array and second array. If first and second aren't the same
-    length, the mapping will space out elements of the second array (TODO WORD THIS BETTER.)
+    """ Creates a map between elements of first array and second array. If
+    first and second aren't the same length, the mapping will space out
+    elements of the second array (TODO WORD THIS BETTER.)
     Example: [1, 2, 3] -> [a, b, c, d, e, f] returns {1:a, 2:c, 3:e} """
     mapping = {}
     for key_index, key in enumerate(first):

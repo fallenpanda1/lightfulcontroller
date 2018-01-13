@@ -73,7 +73,7 @@ class LightEffect:
         pass
 
 
-class SolidColorLightEffect(LightEffect):
+class SolidColor(LightEffect):
     """Light effect that applies solid color to light section"""
 
     def __init__(self, color):
@@ -83,7 +83,7 @@ class SolidColorLightEffect(LightEffect):
         return self.color.with_alpha(max(0, 1 - progress))
 
 
-class GradientLightEffect(LightEffect):
+class Gradient(LightEffect):
     """Light effect that applies gradient over time to light section"""
 
     def __init__(self, color1, color2):
@@ -99,7 +99,7 @@ class GradientLightEffect(LightEffect):
         return self.color1.with_alpha(alpha).blended_with(self.color2)
 
 
-class MeteorLightEffect(LightEffect):
+class Meteor(LightEffect):
 
     def __init__(self, color, tail_length=1):
         self.color = color
@@ -127,6 +127,19 @@ class MeteorLightEffect(LightEffect):
             # progress -= 1
 
             # return self.color.with_alpha(alpha)
+
+
+class LightEffectTaskFactory:
+    """ Makes light effect task creation more convenient """
+    def __init__(self, pixel_adapter):
+        self.__pixel_adapter = pixel_adapter
+
+    def task(self, effect, section, duration):
+        return LightEffectTask(effect, section, duration, self.__pixel_adapter)
+
+    def repeating_task(self, effect, section, duration, progress_offset):
+        task = self.task(effect, section, duration)
+        return RepeatingTask(task, progress_offset)
 
 
 class LightEffectTask(Task):
