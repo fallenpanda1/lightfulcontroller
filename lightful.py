@@ -2,7 +2,7 @@ import curses
 import argparse
 # TODO: erm, can we simplify this? is that what the __init__ file is for?
 from midi.midi_monitor import MidiMonitor
-from midi.midi_fileio import MidiRecorder, MidiPlayer
+from midi.midirecording import MidiRecorder, MidiPlayer
 import logging
 from curses_log_handler import CursesLogHandler
 from light_engine.adapter import ArduinoPixelAdapter, VirtualArduinoClient
