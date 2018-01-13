@@ -40,9 +40,10 @@ class HangingDoorLightsShow:
         self.note_map = {}
 
         # base map
-        pitches_to_lights = evenly_spaced_mapping(
-            first=range(36, 70),
-            second=self.row2.positions)
+        pitches_to_lights = space_notes_out_into_section(
+            pitches=range(36, 70),
+            lightsection=self.row2
+        )
         for pitch, light_position in pitches_to_lights.items():
             task = self.lightfactory.task(
                 effect=SolidColor(color=YELLOW),
@@ -53,9 +54,10 @@ class HangingDoorLightsShow:
                 task, pitch, self.__midi_monitor)
 
         # melody map
-        pitches_to_lights = evenly_spaced_mapping(
-            first=filter_out_non_C_notes(range(70, 97)),
-            second=self.row3.positions)
+        pitches_to_lights = space_notes_out_into_section(
+            pitches=filter_out_non_C_notes(range(70, 97)),
+            lightsection=self.row3
+        )
         for pitch, light_position in pitches_to_lights.items():
             task = self.lightfactory.task(
                 effect=SolidColor(color=YELLOW),
@@ -144,10 +146,12 @@ class HangingDoorLightsShow:
             logger.info("transitioned to end")
 
             # keys being played at the end
-            key_range = [36, 43, 48, 64, 67, 71, 74]
+            final_chord_pitches = [36, 43, 48, 64, 67, 71, 74]
 
-            final_chord_mapping = evenly_spaced_mapping(
-                key_range, range(0, 20))
+            final_chord_mapping = space_notes_out_into_section(
+                pitches=final_chord_pitches,
+                lightsection=range(0, 20)
+            )
             for pitch, position in final_chord_mapping.items():
                 gradient_cross_section = self.all.positions_with_gradient(
                     (position + 1) * 1.0 / 20)
@@ -159,6 +163,25 @@ class HangingDoorLightsShow:
                 self.note_map[pitch] = MidiOffLightEffectTask(
                     task, pitch, self.__midi_monitor)
 
+
+def space_notes_out_into_section(pitches, lightsection):
+    """ Given a pitch range and a light section, evenly spaces out
+    the pitches in the range into positions in the lightsection.
+    E.g. To space out 5 C maj notes C6 - G6 into 10 lights, call
+    space_notes_out_into_section(
+        pitches=[60, 62, 64, 65, 67],
+        lightsection=LightSection(range(0, 10))
+    This will return:
+    [
+        60: 0,
+        62: 2,
+        64: 4,
+        65: 6,
+        67: 8,
+    ]
+
+    """
+    return evenly_spaced_mapping(pitches, lightsection.positions)
 
 def evenly_spaced_mapping(first, second):
     """ Creates a map between elements of first array and second array. If
