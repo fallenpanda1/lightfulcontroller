@@ -8,7 +8,6 @@ logger = logging.getLogger("global")
 
 
 class LightSection:
-
     def __init__(self, positions, gradients=None):
         if isinstance(positions, range):
             positions = list(positions)
@@ -130,7 +129,7 @@ class Meteor(LightEffect):
 
 
 class LightEffectTaskFactory:
-    """ Makes light effect task creation more convenient """
+    """ Makes light effect task creation more readable and concise """
     def __init__(self, pixel_adapter):
         self.__pixel_adapter = pixel_adapter
 
