@@ -31,38 +31,50 @@ class MidiPlayer:
 
         mido_message = self.__midi_event_list[0]
         delta_time = mido_message.time
-        current_time = time.time()
+        now = time.time()
 
-        if current_time >= self.__last_stored_time + delta_time:
+        if now >= self.__last_stored_time + delta_time:
             if not isinstance(mido_message, mido.MetaMessage):
                 self.__midi_out.send_midi_message(convert_to_rt(mido_message))
             self.__midi_event_list.pop(0)
-            time_drift = current_time - (self.__last_stored_time + delta_time)
-            self.__last_stored_time = current_time - time_drift
+            time_drift = now - (self.__last_stored_time + delta_time)
+            self.__last_stored_time = now - time_drift
 
 
-class InMemoryMidiPlayer:
+class MidiLooper:
+    def __init(self, tempo, ticks_per_beat, start_time, midi_monitor):
+        """
+        start_time tells us when we started the global recording.
+        """
+        self.__midi_monitor = midi_monitor
 
-    def __init__(self, in_memory_recording, virtual_midi_monitor):
-        """ In-memory recording is a list of tuples:
-        (mido_message, delta_time_from_record_start) """
-        self.in_memory_recording = in_memory_recording.copy(
-        )  # make a copy since we'll be mutating
-        self.__midi_out = virtual_midi_monitor
+    def record(self, num_beats):
+        """ Start recording """
+        self.__midi_monitor.register(self)
+        self.__notes_by_time = {}
+        self.__record_start_time = time.time()
+
+    def cancel_record(self):
+        """ Cancel active recording """
+
+    def save_record(self):
+        """ Save active recording """
+        self.__midi_monitor.unregister(self)
 
     def play(self):
-        self.__start_time = time.time()
+        """ Play last saved recording """
+        self.__midi_monitor.register(self)
 
-    def play_loop(self):
-        if len(self.in_memory_recording) == 0:
-            return
+    def stop(self):
+        """ Stop playing last saved recording """
+        self.__midi_monitor.unregister(self)
 
-        mido_message, delta_time = self.in_memory_recording[0]
-        current_time = time.time()
+    def received_midi(self, rtmidi_message):
+        now = time.time()
+        if rtmidi_message.isNoteOn():
+            pitch = rtmidi_message.getNoteNumber()
+            self.__notes_by_time[pitch] = now - self.__record_start_time
 
-        if current_time >= self.__start_time + delta_time:
-            self.__midi_out.send_midi_message(convert_to_rt(mido_message))
-            self.in_memory_recording.pop(0)
 
 
 class MidiRecorder:
@@ -123,16 +135,16 @@ class MidiRecorder:
 
         logger.info("Recorder received msg: " + str(rtmidi_message))
 
-        current_time = time.time()
-        tick_delta = convert_to_ticks(current_time - self.__last_message_time)
-        # logger.info("time delta: " + str(current_time - self.__last_message_time))
+        now = time.time()
+        tick_delta = convert_to_ticks(now - self.__last_message_time)
+        # logger.info("time delta: " + str(now - self.__last_message_time))
         # logger.info("time->tick->time: " + str(convert_to_seconds(tick_delta)))
-        self.__last_message_time = current_time
+        self.__last_message_time = now
 
         mido_message = convert_to_mido(rtmidi_message, tick_delta)
         self.__track.append(mido_message)
 
-        in_memory_message = (mido_message, current_time - self.__start_time)
+        in_memory_message = (mido_message, now - self.__start_time)
         self.in_memory_recording.append(in_memory_message)
 
 
@@ -192,3 +204,29 @@ def is_recognized_rtmidi_message(rtmidi_message):
 
     logger.error("received unknown/unimplemented midi message: " + str(m))
     return False
+
+
+class InMemoryMidiPlayer:
+    """ Only really used for testing purposes at this point, e.g.
+    to sanity check if anything is broken in MidiPlayer """
+
+    def __init__(self, in_memory_recording, virtual_midi_monitor):
+        """ In-memory recording is a list of tuples:
+        (mido_message, delta_time_from_record_start) """
+        self.in_memory_recording = in_memory_recording.copy(
+        )  # make a copy since we'll be mutating
+        self.__midi_out = virtual_midi_monitor
+
+    def play(self):
+        self.__start_time = time.time()
+
+    def play_loop(self):
+        if len(self.in_memory_recording) == 0:
+            return
+
+        mido_message, delta_time = self.in_memory_recording[0]
+        now = time.time()
+
+        if now >= self.__start_time + delta_time:
+            self.__midi_out.send_midi_message(convert_to_rt(mido_message))
+            self.in_memory_recording.pop(0)

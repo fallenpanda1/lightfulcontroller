@@ -40,18 +40,18 @@ class Profiler:
         if self.last_printed_average_time is None:
             self.last_printed_average_time = time.time()
 
-        current_time = time.time()
-        if (current_time > self.last_printed_average_time +
+        now = time.time()
+        if (now > self.last_printed_average_time +
                 self.seconds_per_average):
             logger.info("Average Times: ")
             for identifier, pair in self.times_for_identifier.items():
                 cumulative_time, counter = pair
                 logger.info(str(identifier) + ": " +
                             str(cumulative_time / counter))
-            self.last_printed_average_time = current_time
+            self.last_printed_average_time = now
 
     def increment_time_and_get_delta(self):
-        current_time = time.time()
-        delta_time = current_time - self.last_recorded_time
-        self.last_recorded_time = current_time
+        now = time.time()
+        delta_time = now - self.last_recorded_time
+        self.last_recorded_time = now
         return delta_time

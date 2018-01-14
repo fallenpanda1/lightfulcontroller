@@ -68,12 +68,12 @@ class VirtualNeopixelWindow(window.Window):
                     self.particle_image, x=xpos, y=ypos, batch=self.batch))
 
     def on_draw(self):
-        current_time = time.time()
-        if current_time >= self.time_to_draw_next_frame:
+        now = time.time()
+        if now >= self.time_to_draw_next_frame:
             self.clear()
             self.batch.draw()
             fps = 60
-            self.time_to_draw_next_frame = current_time + 1.0 / fps
+            self.time_to_draw_next_frame = now + 1.0 / fps
 
     # todo: this is happening on separate thread so might cause problems
     def update_with_colors(self, color_array):
