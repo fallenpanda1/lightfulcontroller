@@ -13,6 +13,7 @@ from pymaybe import maybe
 import lightfulwindows
 import rtmidi
 import time
+from midi.midieditor import MidiEditor, RangeVelocityFilter
 
 logger = logging.getLogger("global")
 
@@ -142,6 +143,18 @@ def main_loop(window):
             #    midi_recorder.in_memory_recording, monitor)
             midi_player.play()
             lights_show.reset_lights()
+        elif character == ord('e'):
+            editor = MidiEditor("recording1.mid", "recording1_baseline.mid")
+            filter = RangeVelocityFilter(range(0, 70), 0)
+            editor.apply_filter(filter)
+            editor.save()
+
+            editor = MidiEditor("recording1.mid", "recording1_melody.mid")
+            filter = RangeVelocityFilter(range(70, 255), 0)
+            editor.apply_filter(filter)
+            editor.save()
+
+            logger.info("write successful!")
         elif character == ord(' '):
             # hack: send note off on pitch = 0, which represents a special
             # keyboard event, I guess?
