@@ -11,25 +11,30 @@ DEFAULT_TICKS_PER_BEAT = 9600
 
 class MidiPlayer:
     """ Plays a MIDI file """
+    @classmethod
+    def withfile(cls, file_name, virtual_midi_monitor):
+        """ Load MIDI from file """
+        midi_file = mido.MidiFile(file_name)
+        return MidiPlayer(list(midi_file), virtual_midi_monitor)
+
 
     # TODO: rename--maybe virtual sender or something?
-    def __init__(self, file_name, virtual_midi_monitor):
-        self.file_name = file_name
+    def __init__(self, mido_events, virtual_midi_monitor):
+        """ mido_events - List of mido events to play """
+        self.__mido_events = mido_events
         self.__midi_out = virtual_midi_monitor
 
     def play(self):
-        """ Play the file """
-        logger.info("playing midi file: " + self.file_name)
-        self.__midi_file = mido.MidiFile(self.file_name)
-        self.__midi_event_list = list(self.__midi_file)
+        """ Play the midi """
         self.__last_stored_time = time.time()
+        logger.info("MidiPlayer -> play")
 
     def play_loop(self):
         """ loop that plays any scheduled MIDI notes (runs on main thread) """
-        if len(self.__midi_event_list) == 0:
+        if len(self.__mido_events) == 0:
             return
 
-        mido_message = self.__midi_event_list[0]
+        mido_message = self.__mido_events[0]
         delta_time = mido_message.time
         now = time.time()
 
@@ -38,7 +43,7 @@ class MidiPlayer:
                 rtmidi_message = convert_to_rt(mido_message)
                 if rtmidi_message is not None:
                     self.__midi_out.send_midi_message(rtmidi_message)
-            self.__midi_event_list.pop(0)
+            self.__mido_events.pop(0)
             time_drift = now - (self.__last_stored_time + delta_time)
             self.__last_stored_time = now - time_drift
 

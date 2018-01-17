@@ -138,7 +138,7 @@ def main_loop(window):
         elif character >= ord('1') and character <= ord('9'):
             monitor.send_virtual_note(offset=character - ord('1'))
         elif character == ord('p'):
-            midi_player = MidiPlayer("recording1.mid", monitor)
+            midi_player = MidiPlayer.withfile("recording1.mid", monitor)
             # midi_player = InMemoryMidiPlayer(
             #    midi_recorder.in_memory_recording, monitor)
             midi_player.play()
