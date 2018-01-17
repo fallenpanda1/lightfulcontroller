@@ -42,7 +42,7 @@ class HangingDoorLightsShow:
         # base map
         pitches_to_lights = space_notes_out_into_section(
             pitches=range(36, 70),
-            lightsection=self.row2
+            lightsection=self.row3
         )
         for pitch, light_position in pitches_to_lights.items():
             task = self.lightfactory.task(
@@ -56,7 +56,7 @@ class HangingDoorLightsShow:
         # melody map
         pitches_to_lights = space_notes_out_into_section(
             pitches=filter_out_non_C_notes(range(70, 97)),
-            lightsection=self.row3
+            lightsection=self.row2
         )
         for pitch, light_position in pitches_to_lights.items():
             task = self.lightfactory.task(
@@ -131,15 +131,17 @@ class HangingDoorLightsShow:
         if rtmidi_message.isNoteOn():
             logger.info("received note_on:" + str(rtmidi_message))
 
+            if rtmidi_message.getNoteNumber() == 0:
+                # hacky special message
+                self.special_message_received()
+                return
+
             pitch = rtmidi_message.getNoteNumber()
             if pitch in self.note_map:
                 task = copy.copy(self.note_map[pitch])
                 # only allow 1 task to run at a time for one pitch
                 task.uniquetag = pitch
                 self.__scheduler.add(task)
-        elif rtmidi_message.isNoteOff() and rtmidi_message.getNoteNumber() == 0:
-            # hacky special message
-            self.special_message_received()
 
     def special_message_received(self):
         if not self.__is_in_end_mode:
@@ -148,15 +150,15 @@ class HangingDoorLightsShow:
             # keys being played at the end
             final_chord_pitches = [36, 43, 48, 64, 67, 71, 74]
 
-            final_chord_mapping = space_notes_out_into_section(
-                pitches=final_chord_pitches,
-                lightsection=range(0, 20)
+            final_chord_mapping = evenly_spaced_mapping(
+                first=final_chord_pitches,
+                second=range(0, 20)
             )
             for pitch, position in final_chord_mapping.items():
                 gradient_cross_section = self.all.positions_with_gradient(
                     (position + 1) * 1.0 / 20)
                 task = self.lightfactory.task(
-                    effect=SolidColor(color=make_color(YELLOW)),
+                    effect=SolidColor(color=YELLOW),
                     section=LightSection(gradient_cross_section),
                     duration=0.3
                 )
