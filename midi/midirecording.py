@@ -35,7 +35,9 @@ class MidiPlayer:
 
         if now >= self.__last_stored_time + delta_time:
             if not isinstance(mido_message, mido.MetaMessage):
-                self.__midi_out.send_midi_message(convert_to_rt(mido_message))
+                rtmidi_message = convert_to_rt(mido_message)
+                if rtmidi_message is not None:
+                    self.__midi_out.send_midi_message(rtmidi_message)
             self.__midi_event_list.pop(0)
             time_drift = now - (self.__last_stored_time + delta_time)
             self.__last_stored_time = now - time_drift
@@ -71,10 +73,12 @@ class MidiLooper:
 
     def received_midi(self, rtmidi_message):
         now = time.time()
-        if rtmidi_message.isNoteOn():
-            pitch = rtmidi_message.getNoteNumber()
-            self.__notes_by_time[pitch] = now - self.__record_start_time
+        if (rtmidi_message.isNoteOn()
+                or rtmidi_message.isNoteOff()
+                or (rtmidi_message.isController()
+                    and rtmidi_message.getControllerNumber() == 64)):
 
+            self.__message_by_time[rtmidi_message] = now - self.__record_start_time
 
 
 class MidiRecorder:
@@ -172,7 +176,7 @@ def convert_to_rt(mido_message):
     elif mido_message.type == 'control_change':
         return rtmidi.MidiMessage().controllerEvent(
             mido_message.channel, mido_message.control, mido_message.value)
-    return "unknown mido message"
+    return None
 
 
 def convert_to_mido(rtmidi_message, time):
