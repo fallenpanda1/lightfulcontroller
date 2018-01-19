@@ -130,15 +130,23 @@ class Meteor(LightEffect):
 
 class LightEffectTaskFactory:
     """ Makes light effect task creation more readable and concise """
-    def __init__(self, pixel_adapter):
+    
+    def __init__(self, pixel_adapter, midi_monitor):
         self.__pixel_adapter = pixel_adapter
+        self.__midi_monitor = midi_monitor
 
     def task(self, effect, section, duration):
         return LightEffectTask(effect, section, duration, self.__pixel_adapter)
 
     def repeating_task(self, effect, section, duration, progress_offset):
+        """ Creates a RepeatingTask """
         task = self.task(effect, section, duration)
         return RepeatingTask(task, progress_offset)
+
+    def note_off_task(self, effect, section, duration, pitch):
+        """ Creates a MidiOffLightEffectTask """
+        task = self.task(effect, section, duration)
+        return MidiOffLightEffectTask(task, pitch, self.__midi_monitor)
 
 
 class LightEffectTask(Task):

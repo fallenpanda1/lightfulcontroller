@@ -1,7 +1,6 @@
 import logging
 from light_engine.light_effect import (
-    LightSection, LightEffectTask, LightEffectTaskFactory,
-    MidiOffLightEffectTask, RepeatingTask)
+    LightSection, LightEffectTask, LightEffectTaskFactory)
 from light_engine.light_effect import SolidColor, Meteor, Gradient
 from color import make_color
 import copy
@@ -22,7 +21,8 @@ class HangingDoorLightsShow:
         self.__pixel_adapter = pixel_adapter
         self.__midi_monitor = midi_monitor
         self.__midi_monitor.register(self)
-        self.lightfactory = LightEffectTaskFactory(self.__pixel_adapter)
+        self.lightfactory = LightEffectTaskFactory(self.__pixel_adapter, 
+            self.__midi_monitor)
         # TODO: this is exactly the kind of thing I don't want to have to do
         # for each song!!
         self.__is_in_end_mode = False
@@ -45,13 +45,12 @@ class HangingDoorLightsShow:
             lightsection=self.row3
         )
         for pitch, light_position in pitches_to_lights.items():
-            task = self.lightfactory.task(
+            self.note_map[pitch] = self.lightfactory.note_off_task(
                 effect=SolidColor(color=YELLOW),
                 section=LightSection([light_position]),
-                duration=0.6
+                duration=0.6,
+                pitch=pitch
             )
-            self.note_map[pitch] = MidiOffLightEffectTask(
-                task, pitch, self.__midi_monitor)
 
         # melody map
         pitches_to_lights = space_notes_out_into_section(
@@ -59,13 +58,12 @@ class HangingDoorLightsShow:
             lightsection=self.row2
         )
         for pitch, light_position in pitches_to_lights.items():
-            task = self.lightfactory.task(
+            self.note_map[pitch] = self.lightfactory.note_off_task(
                 effect=SolidColor(color=YELLOW),
                 section=LightSection([light_position]),
-                duration=0.6
+                duration=0.6,
+                pitch=pitch
             )
-            self.note_map[pitch] = MidiOffLightEffectTask(
-                task, pitch, self.__midi_monitor)
 
         # low notes
         for pitch in [29, 31, 33, 34, 36]:
@@ -157,13 +155,12 @@ class HangingDoorLightsShow:
             for pitch, position in final_chord_mapping.items():
                 gradient_cross_section = self.all.positions_with_gradient(
                     (position + 1) * 1.0 / 20)
-                task = self.lightfactory.task(
+                self.note_map[pitch] = self.lightfactory.note_off_task(
                     effect=SolidColor(color=YELLOW),
                     section=LightSection(gradient_cross_section),
-                    duration=0.3
+                    duration=0.3,
+                    pitch=pitch
                 )
-                self.note_map[pitch] = MidiOffLightEffectTask(
-                    task, pitch, self.__midi_monitor)
 
 
 def space_notes_out_into_section(pitches, lightsection):
