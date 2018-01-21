@@ -28,9 +28,9 @@ class HangingDoorLightsShow:
         self.__is_in_end_mode = False
 
         self.row1 = LightSection(range(10, 30))
-        self.row2 = LightSection(list(reversed(range(30, 50))))
+        self.row2 = LightSection(reversed(range(30, 50)))
         self.row3 = LightSection(range(60, 80))
-        self.row4 = LightSection(list(reversed(range(80, 100))))
+        self.row4 = LightSection(reversed(range(80, 100)))
 
         self.row1and4 = self.row1.merged_with(self.row4)
         self.all = LightSection.merge_all(
@@ -119,7 +119,8 @@ class HangingDoorLightsShow:
         self.__scheduler.add(self.lightfactory.task(
             effect=SolidColor(color=make_color(0, 0, 0)),
             section=self.all,
-            duration=1))
+            duration=1)
+        )
         self.__scheduler.tick()
         self.__pixel_adapter.wait_for_ready_state()
         self.__pixel_adapter.push_pixels()

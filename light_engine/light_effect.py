@@ -9,11 +9,9 @@ logger = logging.getLogger("global")
 
 class LightSection:
     def __init__(self, positions, gradients=None):
-        if isinstance(positions, range):
-            positions = list(positions)
-
-        self.positions = positions
-        length = len(positions)
+        # make positions a list if it's a range masquerading as a list
+        self.positions = list(positions)
+        length = len(self.positions)
 
         if gradients is not None:
             self.gradients = gradients
