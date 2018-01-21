@@ -49,32 +49,92 @@ class MidiPlayer:
 
 
 class MidiLooper:
-    def __init(self, tempo, ticks_per_beat, start_time, midi_monitor):
-        """
-        start_time tells us when we started the global recording.
-        """
+    """ a 'measure' is defined as ??? """
+    def __init(self, tempo, ticks_per_beat, beats_per_measure, midi_monitor):
+        self.tempo = tempo  # reminder: nanoseconds per beat
+        self.ticks_per_beat = ticks_per_beat
+        self.start_time = start_time
         self.__midi_monitor = midi_monitor
 
-    def record(self, num_beats):
-        """ Start recording """
-        self.__midi_monitor.register(self)
-        self.__notes_by_time = {}
-        self.__record_start_time = time.time()
+        self.isplaying = false
+
+    def ticks_per_measure(self):
+        """ returns the number of ticks in a measure """
+        return self.ticks_per_beat * self.beats_per_measure
+
+    def record(self, start_time):
+        """ Start recording 
+        start_time: global start time
+        """
+        self.__recorder = MidiRecorder(
+            file_name='',
+            midi_monitor=self.__midi_monitor,
+            tempo=self.tempo,
+            ticks_per_beat=self.ticks_per_beat
+        )
+        self.__recorder.start()
+
+        delta_time = time.time() - start_time
+        self.delta_ticks = convert_to_ticks(delta_time, self.tempo, self.ticks_per_beat)
+        logger.info("recording " + str(delta_time) + " seconds after start")
+        logger.info("recording " + str(self.delta_ticks) + " ticks after start")
 
     def cancel_record(self):
         """ Cancel active recording """
+        self.__recorder.stop(save_to_file=False)
+        pass
 
     def save_record(self):
         """ Save active recording """
-        self.__midi_monitor.unregister(self)
+        self.__recorder.stop(save_to_file=False)
+        recording = self.__recorder.recorded_notes
+        # get the last measure of notes only, then set the first note's 
+        # delta to the delta from measure start
+
+        logger.info("save record before: " + str(recording))
+
+        # add extra delta ticks to first note
+        if len(recording) > 0:
+            recording[0].time += self.delta_ticks
+
+        logger.info("save record after: " + str(recording))
+
+    def snap_to_measures(self, mido_messages):
+        """ Snap each message into measures, based on global start time
+        and beats per measure and ticks per beat and tempo """
+
+        pass
 
     def play(self):
         """ Play last saved recording """
-        self.__midi_monitor.register(self)
+        self.isplaying = true
 
     def stop(self):
         """ Stop playing last saved recording """
         self.__midi_monitor.unregister(self)
+
+    def tick(self, time):
+        """ Tick for when the loop is playing """
+        if not self.isplaying:
+            return
+
+    def play_loop(self):
+        """ loop that plays any scheduled MIDI notes (runs on main thread) """
+        if len(self.__mido_events) == 0:
+            return
+
+        mido_message = self.__mido_events[0]
+        delta_time = mido_message.time
+        now = time.time()
+
+        if now >= self.__last_stored_time + delta_time:
+            if not isinstance(mido_message, mido.MetaMessage):
+                rtmidi_message = convert_to_rt(mido_message)
+                if rtmidi_message is not None:
+                    self.__midi_out.send_midi_message(rtmidi_message)
+            self.__mido_events.pop(0)
+            time_drift = now - (self.__last_stored_time + delta_time)
+            self.__last_stored_time = now - time_drift        
 
     def received_midi(self, rtmidi_message):
         now = time.time()
@@ -89,19 +149,20 @@ class MidiLooper:
 class MidiRecorder:
     """ Records incoming MIDI """
 
-    def __init__(self, file_name, midi_monitor):
+    def __init__(self, file_name, midi_monitor, tempo=DEFAULT_TEMPO, 
+            ticks_per_beat=DEFAULT_TICKS_PER_BEAT):
         self.file_name = file_name
         self.__midi_monitor = midi_monitor
-        self.__recorded_notes = []
-        self.__midi_file = mido.MidiFile(ticks_per_beat=DEFAULT_TICKS_PER_BEAT)
-        self.__tempo = DEFAULT_TEMPO
+        self.tempo = tempo
+        self.ticks_per_beat = ticks_per_beat
+        self.__midi_file = mido.MidiFile(ticks_per_beat=self.ticks_per_beat)
 
         # add track
         self.__track = mido.MidiTrack()  # single track implementation for now
         self.__midi_file.tracks.append(self.__track)
 
         # set the tempo
-        self.__track.append(mido.MetaMessage('set_tempo', tempo=self.__tempo))
+        self.__track.append(mido.MetaMessage('set_tempo', tempo=self.tempo))
         self.__last_message_time = None
 
         self.in_memory_recording = []
@@ -109,22 +170,23 @@ class MidiRecorder:
     def start(self):
         """ Begins recording of all MIDI events """
         logger.info("MidiRecorder: begin recording midi events")
+        self.recorded_notes = []
         self.__midi_monitor.register(self)
         self.__start_time = time.time()
         self.__last_message_time = self.__start_time
         # have to track pedal state because we get a LOT of pedal messages but
-        # only really care if its on or off
+        # only really care if it's on or off
         self.__last_saved_is_pedal_on = False
 
     def is_recording(self):
         return self.__last_message_time is not None
 
-    def stop(self):
+    def stop(self, save_to_file=True):
         logger.info("MidiRecorder: finished recording midi events, "
                     "saved recording to " + self.file_name)
         self.__midi_monitor.unregister(self)
-        self.__midi_file.save(self.file_name)
-        self.__recorded_notes = []
+        if save_to_file:
+            self.__midi_file.save(self.file_name)
         self.__last_message_time = None
 
     def received_midi(self, rtmidi_message):
@@ -145,9 +207,8 @@ class MidiRecorder:
         logger.info("Recorder received msg: " + str(rtmidi_message))
 
         now = time.time()
-        tick_delta = convert_to_ticks(now - self.__last_message_time)
-        # logger.info("time delta: " + str(now - self.__last_message_time))
-        # logger.info("time->tick->time: " + str(convert_to_seconds(tick_delta)))
+        tick_delta = convert_to_ticks(now - self.__last_message_time, 
+            self.tempo, self.ticks_per_beat)
         self.__last_message_time = now
 
         mido_message = convert_to_mido(rtmidi_message, tick_delta)
@@ -157,13 +218,13 @@ class MidiRecorder:
         self.in_memory_recording.append(in_memory_message)
 
 
-def convert_to_ticks(time_in_seconds):
-    scale = DEFAULT_TEMPO * 1e-6 / DEFAULT_TICKS_PER_BEAT
+def convert_to_ticks(time_in_seconds, tempo, ticks_per_beat):
+    ticks_per_second = tempo * 1e-6 / ticks_per_beat
     return int(time_in_seconds / scale)
 
 
-def convert_to_seconds(ticks):
-    scale = DEFAULT_TEMPO * 1e-6 / DEFAULT_TICKS_PER_BEAT
+def convert_to_seconds(ticks, tempo, ticks_per_beat):
+    ticks_per_second = tempo * 1e-6 / ticks_per_beat
     return ticks * scale
 
 # Convenience conversions between mido and rtmidi. TODO: it'd be nice to
