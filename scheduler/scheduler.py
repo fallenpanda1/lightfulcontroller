@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 logger = logging.getLogger("global")
 
 class Task(ABC):
-    """A "lightful" task gets scheduled to tick once per main loop until cfinished"""
+    """A "lightful" task gets scheduled to tick once per main loop until finished"""
 
     # if a unique id is set, then only one task can be running at a time using this id.
     # any tasks being scheduled will cancel existing tasks with matching id.
