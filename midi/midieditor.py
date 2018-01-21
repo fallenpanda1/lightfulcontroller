@@ -19,11 +19,6 @@ class MidiFilter:
         """ See 'filter_note_on' """
         return mido_message
 
-    def will_save(self):
-        """ Editor is about to save.
-        Subclasses can optionally override """
-        pass
-
 
 class RangeVelocityFilter(MidiFilter):
     """ Increase/decrease velocity of notes in range. All notes
@@ -38,34 +33,6 @@ class RangeVelocityFilter(MidiFilter):
         if mido_message.note in self.note_range:
             new_message.velocity = round(mido_message.velocity * self.multiplier)
         return new_message
-
-
-class FileSplitFilter(MidiFilter):
-    """ Saves notes in the specified range into a different file """
-
-    def __init__(self, other_file_name, note_range):
-        self.note_range = note_range
-        self.__output_file_name = other_file_name
-        self.__output_file = MidiFile(ticks_per_beat=DEFAULT_TICKS_PER_BEAT)
-        self.__track = MidiTrack()  # single track implementation for now
-        self.__output_file.tracks.append(self.__track)
-        # set the tempo (TODO: get this from the original midi)
-        self.__track.append(MetaMessage('set_tempo', tempo=DEFAULT_TEMPO))
-
-    def filter_note_on(self, mido_message):
-        if not mido_message.note in self.note_range:
-            self.__track.append(mido_message)
-            return None  # don't return any note back
-        return mido_message
-
-    def filter_note_off(self, mido_message):
-        if mido_message.note in self.note_range:
-            self.__track.append(mido_message)
-            return None  # don't return any note back
-        return mido_message
-
-    def will_save(self):
-        self.__output_file.save(self.__output_file_name)
 
 
 class MidiEditor:
@@ -103,8 +70,5 @@ class MidiEditor:
         self.__messages = filtered_messages
 
     def save(self):
-        for midifilter in self.__applied_filters:
-            midifilter.will_save()
-
         self.__track.extend(self.__messages)
         self.__output_file.save(self.output_file_name)
