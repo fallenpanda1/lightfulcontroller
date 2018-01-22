@@ -1,6 +1,5 @@
 import curses
 import argparse
-# TODO: erm, can we simplify this? is that what the __init__ file is for?
 from midi.midimonitor import MidiMonitor
 from midi.midirecording import MidiRecorder, MidiPlayer
 import logging
@@ -25,7 +24,11 @@ curses.noecho()
 stdscr.nodelay(1)  # set getch() non-blocking
 
 pixel_adapter = None
+lights_show = None
 
+midi_monitor = None
+midi_player = None
+midi_recorder = None
 
 def main_loop(window):
     # set up curses window (similar to a regular terminal window except it
@@ -53,8 +56,11 @@ def main_loop(window):
     args = parser.parse_args()
 
     # set up Midi listener
-    monitor = MidiMonitor()
-    monitor.start()
+    global midi_monitor
+    midi_monitor = MidiMonitor()
+    midi_monitor.start()
+
+    global midi_player
 
     # set up scheduler for animations, effects, etc.
     scheduler = Scheduler()
@@ -74,8 +80,10 @@ def main_loop(window):
     pixel_adapter.start()
 
     # create show
+    global lights_show
     lights_show = hanging_door_lights_show.HangingDoorLightsShow(
-        scheduler, pixel_adapter, monitor)
+        scheduler, pixel_adapter, midi_monitor)
+
     # create keyboard midi_monitor
     keyboard_monitor = KeyboardMonitor()
 
@@ -93,9 +101,6 @@ def main_loop(window):
     curses_window.addstr("(q)uit\n\n")
     curses_window.refresh()
 
-    midi_recorder = None
-    midi_player = None
-
     p = profiler.Profiler()
     p.enabled = False  # True to enable time profile logs of main run loop
 
@@ -108,16 +113,15 @@ def main_loop(window):
 
         p.avg("midi player play")
         # listen for any new midi input
-        monitor.listen_loop()
+        midi_monitor.listen_loop()
         p.avg("midi listen")
         # tick scheduler
         scheduler.tick()  # TODO: ticks only need to happen once per draw
         p.avg("scheduler")
-        # push pixels (NOTE: only pushes pixels after arduino say it's ready)
+        # push pixels (NOTE: only pushes pixels after arduino says it's ready)
         pixel_adapter.push_pixels()
         p.avg("pixel push")
-        # check for any keyboard input (TODO: move into a keyboard monitor
-        # object)
+
         character = stdscr.getch()
         keyboard_monitor.notify_key_press(character)
 
@@ -128,12 +132,12 @@ def main_loop(window):
         elif character == ord('q'):
             lights_show.clear_lights()
             pixel_adapter.stop()
-            monitor.stop()
+            midi_monitor.stop()
             maybe(virtual_client).stop()
             exit()
         elif character == ord('r'):
             if midi_recorder is None:
-                midi_recorder = MidiRecorder("recording1.mid", monitor)
+                midi_recorder = MidiRecorder("recording1.mid", midi_monitor)
                 midi_recorder.start()
                 lights_show.reset_lights()
             else:
@@ -142,11 +146,11 @@ def main_loop(window):
         elif character == ord('l'):
             scheduler.print_state()
         elif character >= ord('1') and character <= ord('9'):
-            monitor.send_virtual_note(offset=character - ord('1'))
+            midi_monitor.send_virtual_note(offset=character - ord('1'))
         elif character == ord('p'):
-            midi_player = MidiPlayer.withfile("recording1.mid", monitor)
+            midi_player = MidiPlayer.withfile("recording1.mid", midi_monitor)
             # midi_player = InMemoryMidiPlayer(
-            #    midi_recorder.in_memory_recording, monitor)
+            #    midi_recorder.in_memory_recording, midi_monitor)
             midi_player.play()
             lights_show.reset_lights()
         elif character == ord('e'):
@@ -159,7 +163,6 @@ def main_loop(window):
             filter = RangeVelocityFilter(range(70, 255), 0)
             editor.apply_filter(filter)
             editor.save()
-
             logger.info("write successful!")
         elif character == ord('b'):
             sys.stdout.write('\a')
@@ -167,7 +170,7 @@ def main_loop(window):
         elif character == ord(' '):
             # hack: send note off on pitch = 0, which represents a special
             # keyboard event, I guess?
-            monitor.send_midi_message(rtmidi.MidiMessage().noteOff(0, 0))
+            midi_monitor.send_midi_message(rtmidi.MidiMessage().noteOff(0, 0))
         p.avg("character read")
 
         # update & render loop for lightful windows
