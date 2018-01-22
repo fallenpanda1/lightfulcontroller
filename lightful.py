@@ -4,7 +4,7 @@ from midi.midimonitor import MidiMonitor
 from midi.midirecording import MidiRecorder, MidiPlayer
 import logging
 from curses_log_handler import CursesLogHandler
-from light_engine.adapter import ArduinoPixelAdapter, VirtualArduinoClient
+from light_engine.pixeladapter import ArduinoPixelAdapter, VirtualArduinoClient
 from scheduler.scheduler import Scheduler
 from shows import hanging_door_lights_show
 import profiler
