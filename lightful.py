@@ -14,6 +14,7 @@ import lightfulwindows
 import rtmidi
 import time
 from midi.midieditor import MidiEditor, RangeVelocityFilter
+import sys
 from keyboard_monitor import KeyboardMonitor
 
 logger = logging.getLogger("global")
@@ -160,6 +161,9 @@ def main_loop(window):
             editor.save()
 
             logger.info("write successful!")
+        elif character == ord('b'):
+            sys.stdout.write('\a')
+            sys.stdout.flush()
         elif character == ord(' '):
             # hack: send note off on pitch = 0, which represents a special
             # keyboard event, I guess?
