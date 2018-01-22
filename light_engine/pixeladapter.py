@@ -74,7 +74,7 @@ class ArduinoPixelAdapter:
 
     def wait_for_ready_state(self):
         """ Block and wait for arduino to send back message """
-        while not self.ready_for_send:
+        while not self.ready_for_push:
             self.check_for_ready_state()
             time.sleep(0.01)
 
@@ -83,7 +83,7 @@ class ArduinoPixelAdapter:
         return self.__ready_for_push
 
     def check_for_push_received_message(self):
-        # if ready_for_send is false it means we're waiting for arduino
+        # if ready_for_push is false it means we're waiting for arduino
         # response
         if not self.__ready_for_push and self.__serial.in_waiting > 0:
             # any response will do for now -- Arduino just sends a single
