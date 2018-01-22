@@ -1,4 +1,7 @@
 from pymaybe import maybe
+import logging
+
+logger = logging.getLogger("global")
 
 class KeyboardMonitor:
     """ TODO: work in progress """
@@ -10,7 +13,7 @@ class KeyboardMonitor:
         if key in self.callbacks_by_key:
             logger.error("key " + str(key) + " already has a callback")
             return
-        self.callbacks_by_key[key] = callback
+        self.callbacks_by_key[ord(key)] = callback
 
     def notify_key_press(self, character):
         callback = self.callbacks_by_key.get(character)

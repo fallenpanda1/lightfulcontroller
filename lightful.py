@@ -24,6 +24,7 @@ curses.noecho()
 stdscr.nodelay(1)  # set getch() non-blocking
 
 pixel_adapter = None
+virtual_client = None
 lights_show = None
 
 midi_monitor = None
@@ -70,7 +71,7 @@ def main_loop(window):
     global pixel_adapter
     num_pixels = 100
     serial_port_id = '/dev/tty.usbmodem1411'  # TODO: make configurable
-    virtual_client = None
+    global virtual_client
     if args.virtualpixels:
         logger.info("using simulated arduino/neopixels")
         virtual_client = VirtualArduinoClient(num_pixels=num_pixels)
@@ -86,6 +87,9 @@ def main_loop(window):
 
     # create keyboard midi_monitor
     keyboard_monitor = KeyboardMonitor()
+
+    # add global events
+    keyboard_monitor.add_callback('q', "(q)uit", exit_app)
 
     # TODO: add protocol for light shows to describe layout for simulation
     # configure neopixel simulator with light show's data
@@ -130,12 +134,6 @@ def main_loop(window):
             pixel_adapter.start()
         elif character == ord('c'):
             pixel_adapter.stop()
-        elif character == ord('q'):
-            lights_show.clear_lights()
-            pixel_adapter.stop()
-            midi_monitor.stop()
-            maybe(virtual_client).stop()
-            exit()
         elif character == ord('r'):
             if midi_recorder is None:
                 midi_recorder = MidiRecorder("recording1.mid", midi_monitor)
@@ -183,5 +181,11 @@ def main_loop(window):
         # their stuff (e.g. midi player)
         time.sleep(0.001)
 
+def exit_app():
+    lights_show.clear_lights()
+    pixel_adapter.stop()
+    midi_monitor.stop()
+    maybe(virtual_client).stop()
+    exit()
 
 curses.wrapper(main_loop)
