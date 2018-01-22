@@ -14,6 +14,7 @@ import lightfulwindows
 import rtmidi
 import time
 from midi.midieditor import MidiEditor, RangeVelocityFilter
+from keyboard_monitor import KeyboardMonitor
 
 logger = logging.getLogger("global")
 
@@ -74,6 +75,8 @@ def main_loop(window):
     # create show
     lights_show = hanging_door_lights_show.HangingDoorLightsShow(
         scheduler, pixel_adapter, monitor)
+    # create keyboard midi_monitor
+    keyboard_monitor = KeyboardMonitor()
 
     # TODO: add protocol for light shows to describe layout for simulation
     # configure neopixel simulator with light show's data
@@ -115,6 +118,8 @@ def main_loop(window):
         # check for any keyboard input (TODO: move into a keyboard monitor
         # object)
         character = stdscr.getch()
+        keyboard_monitor.notify_key_press(character)
+
         if character == ord('o'):
             pixel_adapter.start()
         elif character == ord('c'):
