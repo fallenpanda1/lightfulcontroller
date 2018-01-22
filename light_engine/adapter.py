@@ -44,7 +44,8 @@ class ArduinoPixelAdapter:
 
         logger.info("Serial open, handshake complete!")
 
-        self.ready_for_send = True
+        # ready for next push
+        self.__ready_for_push = True
 
     def start(self):
         if not self.__serial.is_open:
@@ -77,24 +78,26 @@ class ArduinoPixelAdapter:
             self.check_for_ready_state()
             time.sleep(0.01)
 
-    def check_for_ready_state(self):
+    def ready_for_push(self):
+        self.check_for_push_received_message()
+        return self.__ready_for_push
+
+    def check_for_push_received_message(self):
         # if ready_for_send is false it means we're waiting for arduino
         # response
-        if not self.ready_for_send and self.__serial.in_waiting > 0:
+        if not self.__ready_for_push and self.__serial.in_waiting > 0:
             # any response will do for now -- Arduino just sends a single
             # newline back
             self.__serial.readline()
-            self.ready_for_send = True
+            self.__ready_for_push = True
 
     def push_pixels(self):
         if not self.__serial.is_open:
             logger.error("Trying to send serial when serial isn't open!")
 
-        self.check_for_ready_state()
-
-        if self.ready_for_send:
+        if self.ready_for_push():
             self.__serial.write(self.__pixel_array)
-            self.ready_for_send = False
+            self.__ready_for_push = False  # now wait for next received message
 
 
 class VirtualArduinoClient:

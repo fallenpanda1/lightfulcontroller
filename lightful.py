@@ -116,11 +116,12 @@ def main_loop(window):
         midi_monitor.listen_loop()
         p.avg("midi listen")
         # tick scheduler
-        scheduler.tick()  # TODO: ticks only need to happen once per draw
-        p.avg("scheduler")
-        # push pixels (NOTE: only pushes pixels after arduino says it's ready)
-        pixel_adapter.push_pixels()
-        p.avg("pixel push")
+        if pixel_adapter.ready_for_push():
+            scheduler.tick() 
+            p.avg("scheduler")
+            
+            pixel_adapter.push_pixels()
+            p.avg("pixel push")
 
         character = stdscr.getch()
         keyboard_monitor.notify_key_press(character)
