@@ -88,12 +88,16 @@ def main_loop(window):
     # create keyboard midi_monitor
     keyboard_monitor = KeyboardMonitor()
 
-    # add global events
-    keyboard_monitor.add_callback('q', "(q)uit", exit_app)
-
     # TODO: add protocol for light shows to describe layout for simulation
     # configure neopixel simulator with light show's data
     maybe(virtual_client).start(lights_show)
+
+
+    # add global events
+    k = keyboard_monitor
+    k.add_keydown_callback('q', "(q)uit", exit_app)
+    k.add_keydown_callback('o', "(o)pen serial connection", pixel_adapter.start)
+    k.add_keydown_callback('c', "(c)lose serial connection", pixel_adapter.stop)
 
     curses_window.addstr("\nDone setting up\n\n")
     curses_window.addstr("Keyboard Shortcuts:\n")
@@ -130,9 +134,7 @@ def main_loop(window):
         character = stdscr.getch()
         keyboard_monitor.notify_key_press(character)
 
-        if character == ord('o'):
-            pixel_adapter.start()
-        elif character == ord('c'):
+        if character == ord('c'):
             pixel_adapter.stop()
         elif character == ord('r'):
             if midi_recorder is None:
