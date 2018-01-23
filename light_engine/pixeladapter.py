@@ -146,11 +146,11 @@ class VirtualArduinoClient:
     def __loop(self):
         # wait a little while for the adapter to be initialized before
         # beginning setup protocol
-        time.sleep(0.1)
+        time.sleep(0.05)
         logger.info("sending message")
         # communication protocol is currently kind of.. handwavy
         self.__write_to_master("I'm ready! hit me with some setup calls!\n")
-        time.sleep(0.1)  # wait for setup calls
+        time.sleep(0.05)  # wait for setup calls
         response_bytes = self.__serial_reader.readline()
         num_pixels = ord(response_bytes)
         if num_pixels != self.__num_pixels:
