@@ -31,6 +31,7 @@ midi_monitor = None
 midi_player = None
 midi_recorder = None
 
+
 def main_loop(window):
     # set up curses window (similar to a regular terminal window except it
     # allows for non-blocking keyboard input)

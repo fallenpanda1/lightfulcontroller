@@ -17,7 +17,6 @@ class MidiPlayer:
         midi_file = mido.MidiFile(file_name)
         return MidiPlayer(list(midi_file), virtual_midi_monitor)
 
-
     # TODO: rename--maybe virtual sender or something?
     def __init__(self, mido_events, virtual_midi_monitor):
         """ mido_events - List of mido events to play """
@@ -63,7 +62,7 @@ class MidiLooper:
         return self.ticks_per_beat * self.beats_per_measure
 
     def record(self, start_time):
-        """ Start recording 
+        """ Start recording
         start_time: global start time
         """
         self.__recorder = MidiRecorder(
@@ -88,7 +87,7 @@ class MidiLooper:
         """ Save active recording """
         self.__recorder.stop(save_to_file=False)
         recording = self.__recorder.recorded_notes
-        # get the last measure of notes only, then set the first note's 
+        # get the last measure of notes only, then set the first note's
         # delta to the delta from measure start
 
         logger.info("save record before: " + str(recording))
@@ -134,7 +133,7 @@ class MidiLooper:
                     self.__midi_out.send_midi_message(rtmidi_message)
             self.__mido_events.pop(0)
             time_drift = now - (self.__last_stored_time + delta_time)
-            self.__last_stored_time = now - time_drift        
+            self.__last_stored_time = now - time_drift
 
     def received_midi(self, rtmidi_message):
         now = time.time()
@@ -149,7 +148,7 @@ class MidiLooper:
 class MidiRecorder:
     """ Records incoming MIDI """
 
-    def __init__(self, file_name, midi_monitor, tempo=DEFAULT_TEMPO, 
+    def __init__(self, file_name, midi_monitor, tempo=DEFAULT_TEMPO,
             ticks_per_beat=DEFAULT_TICKS_PER_BEAT):
         self.file_name = file_name
         self.__midi_monitor = midi_monitor
@@ -207,7 +206,7 @@ class MidiRecorder:
         logger.info("Recorder received msg: " + str(rtmidi_message))
 
         now = time.time()
-        tick_delta = convert_to_ticks(now - self.__last_message_time, 
+        tick_delta = convert_to_ticks(now - self.__last_message_time,
             self.tempo, self.ticks_per_beat)
         self.__last_message_time = now
 

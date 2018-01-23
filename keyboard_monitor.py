@@ -3,6 +3,7 @@ import logging
 
 logger = logging.getLogger("global")
 
+
 class KeyboardMonitor:
     """ Monitors keyboard events and supports registering callbacks
     for specific events """
