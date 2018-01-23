@@ -1,7 +1,6 @@
 import curses
 import argparse
 from midi.midimonitor import MidiMonitor
-from midi.midirecording import MidiRecorder, MidiPlayer
 import logging
 from curses_log_handler import CursesLogHandler
 from light_engine.pixeladapter import ArduinoPixelAdapter, VirtualArduinoClient
@@ -10,11 +9,9 @@ from shows import hanging_door_lights_show
 import profiler
 from pymaybe import maybe
 import lightfulwindows
-import rtmidi
 import time
-from midi.midieditor import MidiEditor, RangeVelocityFilter
-import sys
 from keyboard_monitor import KeyboardMonitor
+from lightful_shortcuts import LightfulKeyboardShortcuts
 
 logger = logging.getLogger("global")
 
@@ -29,7 +26,6 @@ lights_show = None
 
 midi_monitor = None
 midi_player = None
-midi_recorder = None
 
 
 def main_loop(window):
@@ -86,28 +82,22 @@ def main_loop(window):
     lights_show = hanging_door_lights_show.HangingDoorLightsShow(
         scheduler, pixel_adapter, midi_monitor)
 
-    # create keyboard midi_monitor
-    keyboard_monitor = KeyboardMonitor()
-
     # TODO: add protocol for light shows to describe layout for simulation
     # configure neopixel simulator with light show's data
     maybe(virtual_client).start(lights_show)
 
-
-    # add global events
-    k = keyboard_monitor
-    k.add_keydown_callback('q', "(q)uit", exit_app)
-    k.add_keydown_callback('o', "(o)pen serial connection", pixel_adapter.start)
-    k.add_keydown_callback('c', "(c)lose serial connection", pixel_adapter.stop)
+    # create keyboard monitor
+    keyboard_monitor = KeyboardMonitor()
+    keyboard_shortcuts = LightfulKeyboardShortcuts(
+        keyboard_monitor, pixel_adapter, virtual_client,
+        lights_show, midi_monitor, midi_player,
+        scheduler
+    )
+    keyboard_shortcuts.register_shortcuts()
 
     curses_window.addstr("\nDone setting up\n\n")
     curses_window.addstr("Keyboard Shortcuts:\n")
-    curses_window.addstr("(c)lose serial connection\n")
-    curses_window.addstr("(o)pen serial connection\n")
-    curses_window.addstr("(r)ecord MIDI input to a save file, or stop and save"
-                         "recording if recording in progress\n")
-    curses_window.addstr("(p)lay saved MIDI recording\n")
-    curses_window.addstr("(q)uit\n\n")
+    curses_window.addstr(keyboard_shortcuts.shortcuts_description() + "\n")
     curses_window.refresh()
 
     p = profiler.Profiler()
@@ -126,53 +116,15 @@ def main_loop(window):
         p.avg("midi listen")
         # tick scheduler
         if pixel_adapter.ready_for_push():
-            scheduler.tick() 
+            scheduler.tick()
             p.avg("scheduler")
-            
+
             pixel_adapter.push_pixels()
             p.avg("pixel push")
 
         character = stdscr.getch()
         keyboard_monitor.notify_key_press(character)
 
-        if character == ord('c'):
-            pixel_adapter.stop()
-        elif character == ord('r'):
-            if midi_recorder is None:
-                midi_recorder = MidiRecorder("recording1.mid", midi_monitor)
-                midi_recorder.start()
-                lights_show.reset_lights()
-            else:
-                midi_recorder.stop()  # TODO: maybe fork into cancel vs save?
-                midi_recorder = None
-        elif character == ord('l'):
-            scheduler.print_state()
-        elif character >= ord('1') and character <= ord('9'):
-            midi_monitor.send_virtual_note(offset=character - ord('1'))
-        elif character == ord('p'):
-            midi_player = MidiPlayer.withfile("recording1.mid", midi_monitor)
-            # midi_player = InMemoryMidiPlayer(
-            #    midi_recorder.in_memory_recording, midi_monitor)
-            midi_player.play()
-            lights_show.reset_lights()
-        elif character == ord('e'):
-            editor = MidiEditor("recording1.mid", "recording1_baseline.mid")
-            filter = RangeVelocityFilter(range(0, 70), 0)
-            editor.apply_filter(filter)
-            editor.save()
-
-            editor = MidiEditor("recording1.mid", "recording1_melody.mid")
-            filter = RangeVelocityFilter(range(70, 255), 0)
-            editor.apply_filter(filter)
-            editor.save()
-            logger.info("write successful!")
-        elif character == ord('b'):
-            sys.stdout.write('\a')
-            sys.stdout.flush()
-        elif character == ord(' '):
-            # hack: send note off on pitch = 0, which represents a special
-            # keyboard event, I guess?
-            midi_monitor.send_midi_message(rtmidi.MidiMessage().noteOff(0, 0))
         p.avg("character read")
 
         # update & render loop for lightful windows
@@ -184,11 +136,5 @@ def main_loop(window):
         # their stuff (e.g. midi player)
         time.sleep(0.001)
 
-def exit_app():
-    lights_show.clear_lights()
-    pixel_adapter.stop()
-    midi_monitor.stop()
-    maybe(virtual_client).stop()
-    exit()
 
 curses.wrapper(main_loop)
