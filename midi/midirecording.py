@@ -58,7 +58,7 @@ class Metronome:
         self.last_tick_time = time.time()
 
     def tick(self, time):
-        next_tick_time = self.last_tick_time + 1.0 * tempo / 1000000
+        next_tick_time = self.last_tick_time + 1.0 * self.tempo / 1000000
         if time >= next_tick_time:
             self.last_tick_time = next_tick_time
             self.ring()
@@ -76,7 +76,7 @@ class MidiLooper:
         self.start_time = time.time()
         self.__midi_monitor = midi_monitor
 
-        self.isplaying = false
+        self.isplaying = False
 
     def ticks_per_measure(self):
         """ returns the number of ticks in a measure """
@@ -95,7 +95,8 @@ class MidiLooper:
         self.__recorder.start()
 
         delta_time = time.time() - start_time
-        self.delta_ticks = convert_to_ticks(delta_time, self.tempo, self.ticks_per_beat)
+        self.delta_ticks = convert_to_ticks(delta_time, self.tempo,
+                                            self.ticks_per_beat)
         logger.info("recording " + str(delta_time) + " seconds after start")
         logger.info("recording " + str(self.delta_ticks) + " ticks after start")
 
@@ -170,7 +171,7 @@ class MidiRecorder:
     """ Records incoming MIDI """
 
     def __init__(self, file_name, midi_monitor, tempo=DEFAULT_TEMPO,
-            ticks_per_beat=DEFAULT_TICKS_PER_BEAT):
+                 ticks_per_beat=DEFAULT_TICKS_PER_BEAT):
         self.file_name = file_name
         self.__midi_monitor = midi_monitor
         self.tempo = tempo
@@ -228,7 +229,7 @@ class MidiRecorder:
 
         now = time.time()
         tick_delta = convert_to_ticks(now - self.__last_message_time,
-            self.tempo, self.ticks_per_beat)
+                                      self.tempo, self.ticks_per_beat)
         self.__last_message_time = now
 
         mido_message = convert_to_mido(rtmidi_message, tick_delta)
@@ -240,12 +241,12 @@ class MidiRecorder:
 
 def convert_to_ticks(time_in_seconds, tempo, ticks_per_beat):
     ticks_per_second = tempo * 1e-6 / ticks_per_beat
-    return int(time_in_seconds / scale)
+    return int(time_in_seconds / ticks_per_second)
 
 
 def convert_to_seconds(ticks, tempo, ticks_per_beat):
     ticks_per_second = tempo * 1e-6 / ticks_per_beat
-    return ticks * scale
+    return ticks * ticks_per_second
 
 # Convenience conversions between mido and rtmidi. TODO: it'd be nice to
 # monkey-patch these directly onto the classes
