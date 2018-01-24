@@ -2,10 +2,13 @@ from pymaybe import maybe
 import logging
 import rtmidi
 import sys
+import time
 from midi.midieditor import MidiEditor
 from midi.midieditor import RangeVelocityFilter
 from midi.midirecording import PlayMidiTask
+from midi.midirecording import MidiLooper
 from midi.midirecording import MidiRecorder
+from midi.midirecording import MetronomeTask
 
 logger = logging.getLogger("global")
 
@@ -25,6 +28,9 @@ class LightfulKeyboardShortcuts:
         self.animation_scheduler = animation_scheduler
         self.midi_scheduler = midi_scheduler
 
+        self.midi_recorder = None
+        self.midi_looper = None
+
     def register_shortcuts(self):
         k = self.keyboard_monitor
         k.add_keydown_callback('o', "(o)pen serial connection",
@@ -36,9 +42,11 @@ class LightfulKeyboardShortcuts:
                                self.toggle_record_midi_file)
         k.add_keydown_callback('p', "(p)lay saved MIDI recording",
                                self.play_recorded_midi_file)
-        k.add_keydown_callback('l', "(l)oop - begin midi looper",
-                               self.play_recorded_midi_file)
-        k.add_keydown_callback('b', "(b)eep (local speakers)", self.local_beep)
+        k.add_keydown_callback('l', "(l)oop - begin midi looper, or "
+                               "if already recording, then loop the recording",
+                               self.toggle_loop)
+        k.add_keydown_callback('b', "(b)eep (local speakers)",
+                               self.add_metronome)
         k.add_keydown_callback('e', "(e)dit MIDI file", self.edit_midi_file)
         k.add_keydown_callback('q', "(q)uit", self.exit_app)
 
@@ -75,12 +83,27 @@ class LightfulKeyboardShortcuts:
         self.lights_show.reset_lights()
         self.midi_scheduler.add(self.play_midi_task)
 
+    def toggle_loop(self):
+        if not self.midi_looper:
+            self.midi_looper = MidiLooper(
+                tempo=500000,
+                ticks_per_beat=1,
+                beats_per_measure=4,
+                midi_monitor=self.midi_monitor,
+                midi_scheduler=self.midi_scheduler
+            )
+            self.midi_looper.record(time.time())
+        else:
+            self.midi_looper.save_record()
+            self.midi_looper.play()
+
+
     def send_special_keyboard_event(self):
         self.midi_monitor.send_midi_message(rtmidi.MidiMessage().noteOff(0, 0))
 
-    def local_beep(self):
-        sys.stdout.write('\a')
-        sys.stdout.flush()
+    def add_metronome(self):
+        self.metronome_task = MetronomeTask(500000, 4)
+        self.midi_scheduler.add(self.metronome_task)
 
     def edit_midi_file(self):
         editor = MidiEditor("recording1.mid", "recording1_baseline.mid")
