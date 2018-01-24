@@ -55,7 +55,7 @@ class Scheduler:
                 return
 
     def remove(self, task):
-        if task in self.tasks: # not efficient, but unlikely to ever matter
+        if task in self.tasks:  # not efficient, but unlikely to ever matter
             self.tasks.remove(task)
 
     def clear(self):

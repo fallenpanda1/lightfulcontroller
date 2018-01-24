@@ -6,7 +6,7 @@ from curses_log_handler import CursesLogHandler
 from light_engine.pixeladapter import ArduinoPixelAdapter, VirtualArduinoClient
 from scheduler.scheduler import Scheduler
 from shows import hanging_door_lights_show
-import profiler
+from profiler import Profiler
 from pymaybe import maybe
 import lightfulwindows
 import time
@@ -25,7 +25,6 @@ virtual_client = None
 lights_show = None
 
 midi_monitor = None
-midi_player = None
 
 
 def main_loop(window):
@@ -58,11 +57,13 @@ def main_loop(window):
     midi_monitor = MidiMonitor()
     midi_monitor.start()
 
-    global midi_player
+    # set up scheduler for midi events
+    midi_scheduler = Scheduler()
+    midi_scheduler.start()
 
     # set up scheduler for animations, effects, etc.
-    scheduler = Scheduler()
-    scheduler.start()
+    animation_scheduler = Scheduler()
+    animation_scheduler.start()
 
     # set up and connect to NeoPixel adapter (or local virtual simulator)
     global pixel_adapter
@@ -80,7 +81,7 @@ def main_loop(window):
     # create show
     global lights_show
     lights_show = hanging_door_lights_show.HangingDoorLightsShow(
-        scheduler, pixel_adapter, midi_monitor)
+        animation_scheduler, pixel_adapter, midi_monitor)
 
     # TODO: add protocol for light shows to describe layout for simulation
     # configure neopixel simulator with light show's data
@@ -90,8 +91,7 @@ def main_loop(window):
     keyboard_monitor = KeyboardMonitor()
     keyboard_shortcuts = LightfulKeyboardShortcuts(
         keyboard_monitor, pixel_adapter, virtual_client,
-        lights_show, midi_monitor, midi_player,
-        scheduler
+        lights_show, midi_monitor, animation_scheduler, midi_scheduler
     )
     keyboard_shortcuts.register_shortcuts()
 
@@ -100,37 +100,39 @@ def main_loop(window):
     curses_window.addstr(keyboard_shortcuts.shortcuts_description() + "\n")
     curses_window.refresh()
 
-    p = profiler.Profiler()
-    p.enabled = False  # True to enable time profile logs of main run loop
+    profiler = Profiler()
+    # set to True to enable time profile logs of main run loop
+    profiler.enabled = False
 
     while True:
-        p.avg("loop start")
+        profiler.avg("loop start")
 
-        # play any pending notes from the local midi player
-        if midi_player is not None:
-            midi_player.play_loop()
+        midi_scheduler.tick()
 
-        p.avg("midi player play")
+        profiler.avg("midi scheduler tick")
+
         # listen for any new midi input
         midi_monitor.listen_loop()
-        p.avg("midi listen")
-        # tick scheduler
-        if pixel_adapter.ready_for_push():
-            scheduler.tick()
-            p.avg("scheduler")
+        profiler.avg("midi listen")
 
+        if pixel_adapter.ready_for_push():
+            # tick animation scheduler to update pixels
+            animation_scheduler.tick()
+            profiler.avg("animation scheduler")
+
+            # push latest pixel state
             pixel_adapter.push_pixels()
-            p.avg("pixel push")
+            profiler.avg("pixel push")
 
         character = stdscr.getch()
         keyboard_monitor.notify_key_press(character)
 
-        p.avg("character read")
+        profiler.avg("character read")
 
         # update & render loop for lightful windows
         maybe(lightfulwindows).tick()
 
-        p.avg("lightful window rendering")
+        profiler.avg("lightful window rendering")
 
         # have to sleep at least a short time to allow any other threads to do
         # their stuff (e.g. midi player)

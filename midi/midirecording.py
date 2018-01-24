@@ -1,51 +1,16 @@
 import mido
 import time
 import logging
-import rtmidi
 import sys
+from scheduler.scheduler import Task
+from midi.conversions import convert_to_mido
+from midi.conversions import convert_to_rt
+from midi.midiplaying import PlayMidiTask
 
 logger = logging.getLogger("global")
 
 DEFAULT_TEMPO = 500000
 DEFAULT_TICKS_PER_BEAT = 9600
-
-
-class MidiPlayer:
-    """ Plays a MIDI file """
-    @classmethod
-    def withfile(cls, file_name, virtual_midi_monitor):
-        """ Load MIDI from file """
-        midi_file = mido.MidiFile(file_name)
-        return MidiPlayer(list(midi_file), virtual_midi_monitor)
-
-    # TODO: rename--maybe virtual sender or something?
-    def __init__(self, mido_events, virtual_midi_monitor):
-        """ mido_events - List of mido events to play """
-        self.__mido_events = mido_events
-        self.__midi_out = virtual_midi_monitor
-
-    def play(self):
-        """ Play the midi """
-        self.__last_stored_time = time.time()
-        logger.info("MidiPlayer -> play")
-
-    def play_loop(self):
-        """ loop that plays any scheduled MIDI notes (runs on main thread) """
-        if len(self.__mido_events) == 0:
-            return
-
-        mido_message = self.__mido_events[0]
-        delta_time = mido_message.time
-        now = time.time()
-
-        if now >= self.__last_stored_time + delta_time:
-            if not isinstance(mido_message, mido.MetaMessage):
-                rtmidi_message = convert_to_rt(mido_message)
-                if rtmidi_message is not None:
-                    self.__midi_out.send_midi_message(rtmidi_message)
-            self.__mido_events.pop(0)
-            time_drift = now - (self.__last_stored_time + delta_time)
-            self.__last_stored_time = now - time_drift
 
 
 class Metronome:
@@ -70,11 +35,13 @@ class Metronome:
 
 class MidiLooper:
     """ a 'measure' is defined as ??? """
-    def __init__(self, tempo, ticks_per_beat, beats_per_measure, midi_monitor):
+    def __init__(self, tempo, ticks_per_beat, beats_per_measure, midi_monitor,
+                 midi_scheduler):
         self.tempo = tempo  # reminder: nanoseconds per beat
         self.ticks_per_beat = ticks_per_beat
         self.start_time = time.time()
         self.__midi_monitor = midi_monitor
+        self.__midi_scheduler = midi_scheduler
 
         self.isplaying = False
 
@@ -128,7 +95,9 @@ class MidiLooper:
 
     def play(self):
         """ Play last saved recording """
-        self.isplaying = true
+        self.__play_task = PlayMidiTask(self.__recorder.recorded_notes,
+                                        self.__midi_monitor)
+        self.__midi_scheduler.add(self.__play_task)
 
     def stop(self):
         """ Stop playing last saved recording """
@@ -186,8 +155,6 @@ class MidiRecorder:
         self.__track.append(mido.MetaMessage('set_tempo', tempo=self.tempo))
         self.__last_message_time = None
 
-        self.in_memory_recording = []
-
     def start(self):
         """ Begins recording of all MIDI events """
         logger.info("MidiRecorder: begin recording midi events")
@@ -235,9 +202,6 @@ class MidiRecorder:
         mido_message = convert_to_mido(rtmidi_message, tick_delta)
         self.__track.append(mido_message)
 
-        in_memory_message = (mido_message, now - self.__start_time)
-        self.in_memory_recording.append(in_memory_message)
-
 
 def convert_to_ticks(time_in_seconds, tempo, ticks_per_beat):
     ticks_per_second = tempo * 1e-6 / ticks_per_beat
@@ -247,41 +211,6 @@ def convert_to_ticks(time_in_seconds, tempo, ticks_per_beat):
 def convert_to_seconds(ticks, tempo, ticks_per_beat):
     ticks_per_second = tempo * 1e-6 / ticks_per_beat
     return ticks * ticks_per_second
-
-# Convenience conversions between mido and rtmidi. TODO: it'd be nice to
-# monkey-patch these directly onto the classes
-
-
-def convert_to_rt(mido_message):
-    """ Convert a mido message to an rtmidi message """
-    if mido_message.type == 'note_on':
-        return rtmidi.MidiMessage().noteOn(
-            mido_message.channel, mido_message.note, mido_message.velocity)
-    elif mido_message.type == 'note_off':
-        return rtmidi.MidiMessage().noteOff(
-            mido_message.channel, mido_message.note)
-    elif mido_message.type == 'control_change':
-        return rtmidi.MidiMessage().controllerEvent(
-            mido_message.channel, mido_message.control, mido_message.value)
-    return None
-
-
-def convert_to_mido(rtmidi_message, time):
-    """ Convert an rtmidi message plus corresponding delta time into a mido
-    message """
-    m = rtmidi_message
-    if m.isNoteOn():
-        return mido.Message('note_on', note=m.getNoteNumber(),
-                            velocity=m.getVelocity(), time=time)
-    elif m.isNoteOff():
-        return mido.Message('note_off', note=m.getNoteNumber(),
-                            velocity=0, time=time)
-    elif m.isController():
-        if m.getControllerNumber() == 64:  # sustain pedal
-            return mido.Message('control_change', control=64,
-                                value=m.getControllerValue(), time=time)
-
-    logger.error("received unknown/unimplemented midi message: " + str(m))
 
 
 def is_recognized_rtmidi_message(rtmidi_message):
@@ -295,29 +224,3 @@ def is_recognized_rtmidi_message(rtmidi_message):
 
     logger.error("received unknown/unimplemented midi message: " + str(m))
     return False
-
-
-class InMemoryMidiPlayer:
-    """ Only really used for testing purposes at this point, e.g.
-    to sanity check if anything is broken in MidiPlayer """
-
-    def __init__(self, in_memory_recording, virtual_midi_monitor):
-        """ In-memory recording is a list of tuples:
-        (mido_message, delta_time_from_record_start) """
-        self.in_memory_recording = in_memory_recording.copy(
-        )  # make a copy since we'll be mutating
-        self.__midi_out = virtual_midi_monitor
-
-    def play(self):
-        self.__start_time = time.time()
-
-    def play_loop(self):
-        if len(self.in_memory_recording) == 0:
-            return
-
-        mido_message, delta_time = self.in_memory_recording[0]
-        now = time.time()
-
-        if now >= self.__start_time + delta_time:
-            self.__midi_out.send_midi_message(convert_to_rt(mido_message))
-            self.in_memory_recording.pop(0)

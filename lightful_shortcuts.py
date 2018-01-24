@@ -4,7 +4,7 @@ import rtmidi
 import sys
 from midi.midieditor import MidiEditor
 from midi.midieditor import RangeVelocityFilter
-from midi.midirecording import MidiPlayer
+from midi.midirecording import PlayMidiTask
 from midi.midirecording import MidiRecorder
 
 logger = logging.getLogger("global")
@@ -15,14 +15,15 @@ class LightfulKeyboardShortcuts:
     # NOTE: might want to refactor some/all of these
     # to not just be keyboard toggled
     def __init__(self, keyboard_monitor, pixel_adapter, virtual_client,
-                 lights_show, midi_monitor, midi_player, scheduler):
+                 lights_show, midi_monitor, animation_scheduler,
+                 midi_scheduler):
         self.keyboard_monitor = keyboard_monitor
         self.pixel_adapter = pixel_adapter
         self.virtual_client = virtual_client
         self.lights_show = lights_show
         self.midi_monitor = midi_monitor
-        self.midi_player = midi_player
-        self.scheduler = scheduler
+        self.animation_scheduler = animation_scheduler
+        self.midi_scheduler = midi_scheduler
 
     def register_shortcuts(self):
         k = self.keyboard_monitor
@@ -67,12 +68,12 @@ class LightfulKeyboardShortcuts:
 
     def play_recorded_midi_file(self):
         """ play recorded midi file """
-        self.midi_player = MidiPlayer.withfile("recording1.mid",
-                                               self.midi_monitor)
+        self.play_midi_task = PlayMidiTask.withfile("recording1.mid",
+                                                    self.midi_monitor)
         # reset lights show so that we always start any lights show
         # state, e.g. animations, at t=0 when recording starts
         self.lights_show.reset_lights()
-        self.midi_player.play()
+        self.midi_scheduler.add(self.play_midi_task)
 
     def send_special_keyboard_event(self):
         self.midi_monitor.send_midi_message(rtmidi.MidiMessage().noteOff(0, 0))
