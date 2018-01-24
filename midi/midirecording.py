@@ -2,6 +2,7 @@ import mido
 import time
 import logging
 import rtmidi
+import sys
 
 logger = logging.getLogger("global")
 
@@ -47,12 +48,32 @@ class MidiPlayer:
             self.__last_stored_time = now - time_drift
 
 
+class Metronome:
+    """ Metronome """
+    def __init__(self, tempo, beats_per_measure):
+        self.tempo = tempo
+        self.beats_per_measure = beats_per_measure
+
+    def start(self):
+        self.last_tick_time = time.time()
+
+    def tick(self, time):
+        next_tick_time = self.last_tick_time + 1.0 * tempo / 1000000
+        if time >= next_tick_time:
+            self.last_tick_time = next_tick_time
+            self.ring()
+
+    def ring(self):
+        sys.stdout.write('\a')
+        sys.stdout.flush()
+
+
 class MidiLooper:
     """ a 'measure' is defined as ??? """
-    def __init(self, tempo, ticks_per_beat, beats_per_measure, midi_monitor):
+    def __init__(self, tempo, ticks_per_beat, beats_per_measure, midi_monitor):
         self.tempo = tempo  # reminder: nanoseconds per beat
         self.ticks_per_beat = ticks_per_beat
-        self.start_time = start_time
+        self.start_time = time.time()
         self.__midi_monitor = midi_monitor
 
         self.isplaying = false
