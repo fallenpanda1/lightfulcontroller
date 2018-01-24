@@ -128,7 +128,7 @@ class Meteor(LightEffect):
 
 class LightEffectTaskFactory:
     """ Makes light effect task creation more readable and concise """
-    
+
     def __init__(self, pixel_adapter, midi_monitor):
         self.__pixel_adapter = pixel_adapter
         self.__midi_monitor = midi_monitor
@@ -202,6 +202,9 @@ class RepeatingTask(Task):
         return self.task.progress(time)
 
     def is_finished(self, time):
+        # NOTE: there's some precision loss since the task may have
+        # finished before the current time, yet we're restarting the
+        # task at the current time.
         if self.__repeating and self.task.is_finished(time):
             self.task._start_time = time
             return False
