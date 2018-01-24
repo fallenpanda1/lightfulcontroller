@@ -11,6 +11,9 @@ class Task(ABC):
     # any tasks being scheduled will cancel existing tasks with matching id.
     uniquetag = None
 
+    # start time for the task (TODO: unclear if this belongs here)
+    _start_time = None
+
     @abstractmethod
     def start(self, time):
         pass

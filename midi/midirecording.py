@@ -1,11 +1,12 @@
 import mido
-import time
 import logging
 import sys
+from time import time
 from scheduler.scheduler import Task
 from midi.conversions import convert_to_mido
 from midi.conversions import convert_to_rt
 from midi.midiplaying import PlayMidiTask
+from light_engine.light_effect import RepeatingTask  # TODO: this should definitely be moved
 
 logger = logging.getLogger("global")
 
@@ -13,33 +14,36 @@ DEFAULT_TEMPO = 500000
 DEFAULT_TICKS_PER_BEAT = 9600
 
 
-class Metronome:
+class MetronomeTask(Task):
     """ Metronome """
     def __init__(self, tempo, beats_per_measure):
         self.tempo = tempo
         self.beats_per_measure = beats_per_measure
 
-    def start(self):
-        self.last_tick_time = time.time()
+    def start(self, time):
+        self.last_tick_time = time
 
     def tick(self, time):
         next_tick_time = self.last_tick_time + 1.0 * self.tempo / 1000000
         if time >= next_tick_time:
             self.last_tick_time = next_tick_time
-            self.ring()
+            self._ring()
 
-    def ring(self):
+    def _ring(self):
         sys.stdout.write('\a')
         sys.stdout.flush()
 
+    def is_finished(self, time):
+        return False  # never finished
+
 
 class MidiLooper:
-    """ a 'measure' is defined as ??? """
+    """  """
     def __init__(self, tempo, ticks_per_beat, beats_per_measure, midi_monitor,
                  midi_scheduler):
         self.tempo = tempo  # reminder: nanoseconds per beat
         self.ticks_per_beat = ticks_per_beat
-        self.start_time = time.time()
+        self.start_time = time()
         self.__midi_monitor = midi_monitor
         self.__midi_scheduler = midi_scheduler
 
@@ -61,11 +65,14 @@ class MidiLooper:
         )
         self.__recorder.start()
 
-        delta_time = time.time() - start_time
+        delta_time = time() - start_time
         self.delta_ticks = convert_to_ticks(delta_time, self.tempo,
                                             self.ticks_per_beat)
         logger.info("recording " + str(delta_time) + " seconds after start")
         logger.info("recording " + str(self.delta_ticks) + " ticks after start")
+
+    def is_recording(self):
+        return self.__recorder.is_recording()
 
     def cancel_record(self):
         """ Cancel active recording """
@@ -95,45 +102,15 @@ class MidiLooper:
 
     def play(self):
         """ Play last saved recording """
-        self.__play_task = PlayMidiTask(self.__recorder.recorded_notes,
-                                        self.__midi_monitor)
+        self.__play_task = RepeatingTask(PlayMidiTask(self.__recorder.recorded_notes,
+                                        self.__midi_monitor))
         self.__midi_scheduler.add(self.__play_task)
 
+    def pause(self):
+        self.__play_task.pause()
+
     def stop(self):
-        """ Stop playing last saved recording """
-        self.__midi_monitor.unregister(self)
-
-    def tick(self, time):
-        """ Tick for when the loop is playing """
-        if not self.isplaying:
-            return
-
-    def play_loop(self):
-        """ loop that plays any scheduled MIDI notes (runs on main thread) """
-        if len(self.__mido_events) == 0:
-            return
-
-        mido_message = self.__mido_events[0]
-        delta_time = mido_message.time
-        now = time.time()
-
-        if now >= self.__last_stored_time + delta_time:
-            if not isinstance(mido_message, mido.MetaMessage):
-                rtmidi_message = convert_to_rt(mido_message)
-                if rtmidi_message is not None:
-                    self.__midi_out.send_midi_message(rtmidi_message)
-            self.__mido_events.pop(0)
-            time_drift = now - (self.__last_stored_time + delta_time)
-            self.__last_stored_time = now - time_drift
-
-    def received_midi(self, rtmidi_message):
-        now = time.time()
-        if (rtmidi_message.isNoteOn()
-                or rtmidi_message.isNoteOff()
-                or (rtmidi_message.isController()
-                    and rtmidi_message.getControllerNumber() == 64)):
-
-            self.__message_by_time[rtmidi_message] = now - self.__record_start_time
+        self.__midi_scheduler.remove(self.__play_task)
 
 
 class MidiRecorder:
@@ -160,7 +137,7 @@ class MidiRecorder:
         logger.info("MidiRecorder: begin recording midi events")
         self.recorded_notes = []
         self.__midi_monitor.register(self)
-        self.__start_time = time.time()
+        self.__start_time = time()
         self.__last_message_time = self.__start_time
         # have to track pedal state because we get a LOT of pedal messages but
         # only really care if it's on or off
@@ -194,7 +171,7 @@ class MidiRecorder:
 
         logger.info("Recorder received msg: " + str(rtmidi_message))
 
-        now = time.time()
+        now = time()
         tick_delta = convert_to_ticks(now - self.__last_message_time,
                                       self.tempo, self.ticks_per_beat)
         self.__last_message_time = now
@@ -205,7 +182,7 @@ class MidiRecorder:
 
 def convert_to_ticks(time_in_seconds, tempo, ticks_per_beat):
     ticks_per_second = tempo * 1e-6 / ticks_per_beat
-    return int(time_in_seconds / ticks_per_second)
+    return round(time_in_seconds / ticks_per_second)
 
 
 def convert_to_seconds(ticks, tempo, ticks_per_beat):
