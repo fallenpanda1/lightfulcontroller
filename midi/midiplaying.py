@@ -26,7 +26,11 @@ class PlayMidiTask(Task):
     def start(self, time):
         """ Play the midi """
         self.__last_stored_time = time
+        self.is_muted = False
         logger.info("MidiPlayer -> play")
+
+    def mute(self):
+        self.is_muted = True
 
     def tick(self, time):
         """ loop that plays any scheduled MIDI notes (runs on main thread) """
@@ -41,7 +45,7 @@ class PlayMidiTask(Task):
         if time >= self.__last_stored_time + delta_time:
             if not isinstance(mido_message, mido.MetaMessage):
                 rtmidi_message = convert_to_rt(mido_message)
-                if rtmidi_message is not None:
+                if rtmidi_message is not None and not self.is_muted:
                     self.__midi_out.send_midi_message(rtmidi_message)
             self.__mido_events.pop(0)
             time_drift = time - (self.__last_stored_time + delta_time)
