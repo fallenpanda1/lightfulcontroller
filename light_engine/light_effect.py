@@ -182,7 +182,7 @@ class LightEffectTask(Task):
 
 
 class RepeatingTask(Task):
-
+    """ A task that auto-repeats a task once the task is done """
     def __init__(self, task, progress_offset=0.0):
         self.__repeating = True
         self.progress_offset = progress_offset
