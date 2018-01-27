@@ -1,5 +1,7 @@
-import rtmidi
 import logging
+
+import rtmidi
+
 logger = logging.getLogger("global")
 
 

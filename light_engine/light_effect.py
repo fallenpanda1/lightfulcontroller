@@ -1,8 +1,8 @@
-from abc import abstractmethod
 import logging
-import operator
 import math
+import operator
 import time
+from abc import abstractmethod
 
 from scheduler.scheduler import Task
 

@@ -1,9 +1,12 @@
-import logging
-from light_engine.light_effect import (
-    LightSection, LightEffectTask, LightEffectTaskFactory)
-from light_engine.light_effect import SolidColor, Meteor, Gradient
-from color import make_color
 import copy
+import logging
+
+from color import make_color
+from light_engine.light_effect import Gradient
+from light_engine.light_effect import LightEffectTaskFactory
+from light_engine.light_effect import LightSection
+from light_engine.light_effect import Meteor
+from light_engine.light_effect import SolidColor
 
 logger = logging.getLogger("global")
 

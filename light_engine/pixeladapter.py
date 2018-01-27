@@ -1,11 +1,12 @@
-import serial
-from array import array
 import logging
 import os
 import pty
 import threading
 import time
-from color import *
+from array import array
+
+import serial
+
 import lightfulwindows
 
 logger = logging.getLogger("global")

@@ -1,5 +1,6 @@
-from pymaybe import maybe
 import logging
+
+from pymaybe import maybe
 
 logger = logging.getLogger("global")
 

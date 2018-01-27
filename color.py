@@ -1,4 +1,5 @@
 from forbiddenfruit import curse
+
 """Color utilities
 Note: we use forbiddenfruit to monkey-patch the int primitive and add helper
 functions. This is so we can be more declarative when manipulating colors:

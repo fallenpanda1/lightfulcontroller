@@ -1,17 +1,19 @@
-import curses
 import argparse
-from midi.midimonitor import MidiMonitor
+import curses
 import logging
+import time
+
+from pymaybe import maybe
+
+import lightfulwindows
 from curses_log_handler import CursesLogHandler
+from keyboard_monitor import KeyboardMonitor
 from light_engine.pixeladapter import ArduinoPixelAdapter, VirtualArduinoClient
+from lightful_shortcuts import LightfulKeyboardShortcuts
+from midi.midimonitor import MidiMonitor
+from profiler import Profiler
 from scheduler.scheduler import Scheduler
 from shows import hanging_door_lights_show
-from profiler import Profiler
-from pymaybe import maybe
-import lightfulwindows
-import time
-from keyboard_monitor import KeyboardMonitor
-from lightful_shortcuts import LightfulKeyboardShortcuts
 
 logger = logging.getLogger("global")
 

@@ -1,5 +1,6 @@
-import time
 import logging
+import time
+
 logger = logging.getLogger("global")
 
 

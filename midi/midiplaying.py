@@ -1,5 +1,7 @@
-import mido
 import logging
+
+import mido
+
 from midi.conversions import convert_to_rt
 from scheduler.scheduler import Task
 

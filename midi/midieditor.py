@@ -1,5 +1,7 @@
-from mido import MidiFile, MidiTrack, MetaMessage
 import logging
+
+from mido import MidiFile
+from mido import MidiTrack
 
 logger = logging.getLogger("global")
 

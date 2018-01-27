@@ -1,12 +1,14 @@
-import mido
 import logging
 import sys
 from time import time
-from scheduler.scheduler import Task
+
+import mido
+
+# TODO: this should definitely be moved
+from light_engine.light_effect import RepeatingTask
 from midi.conversions import convert_to_mido
-from midi.conversions import convert_to_rt
 from midi.midiplaying import PlayMidiTask
-from light_engine.light_effect import RepeatingTask  # TODO: this should definitely be moved
+from scheduler.scheduler import Task
 
 logger = logging.getLogger("global")
 

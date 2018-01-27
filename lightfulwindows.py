@@ -1,7 +1,9 @@
-from pyglet.gl import pyglet
-from pyglet import graphics, window, image, sprite
-import time
 import logging
+import time
+
+from pyglet import graphics, image, sprite, window
+from pyglet.gl import pyglet
+
 logger = logging.getLogger("global")
 
 """
