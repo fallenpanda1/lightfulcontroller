@@ -4,8 +4,7 @@ from time import time
 
 import mido
 
-# TODO: this should definitely be moved
-from light_engine.light_effect import RepeatingTask
+from lightful_tasks import RepeatingTask
 from midi.conversions import convert_to_mido
 from midi.midiplaying import PlayMidiTask
 from scheduler.scheduler import Task
