@@ -16,6 +16,7 @@ class MidiMonitor:
     def start(self):
         ports = range(self.__midi_in.getPortCount())
 
+        # TODO: the input/output port setup logic is hacky and should be fixed
         # lets us send midi messages to the piano
         self.__midi_out = rtmidi.RtMidiOut()
         if ports:
