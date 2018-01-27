@@ -1,8 +1,10 @@
-from scheduler.scheduler import Task
-import logging
 from abc import abstractmethod
+import logging
 import operator
 import math
+import time
+
+from scheduler.scheduler import Task
 
 logger = logging.getLogger("global")
 
@@ -137,14 +139,15 @@ class LightEffectTaskFactory:
         return LightEffectTask(effect, section, duration, self.__pixel_adapter)
 
     def repeating_task(self, effect, section, duration, progress_offset):
-        """ Creates a RepeatingTask """
+        """ Creates an auto-repeating LightEffectTask """
         task = self.task(effect, section, duration)
-        return RepeatingTask(task, progress_offset)
+        return RepeatingTask(task, duration, progress_offset)
 
     def note_off_task(self, effect, section, duration, pitch):
-        """ Creates a MidiOffLightEffectTask """
+        """ Creates a LightEffectTask that pauses on the first time frame
+        until the midi off event for the input pitch """
         task = self.task(effect, section, duration)
-        return MidiOffLightEffectTask(task, pitch, self.__midi_monitor)
+        return MidiOffTask(task, pitch, self.__midi_monitor)
 
 
 class LightEffectTask(Task):
@@ -161,58 +164,59 @@ class LightEffectTask(Task):
         self.duration = duration
         self.light_adapter = light_adapter
 
+    ### Task Protocol Implementation
     def start(self, time):
-        self._start_time = time
+        self.__start_time = time
 
     def tick(self, time):
         velocity = 1.0 * len(self.section.positions) / self.duration
         for index, position in enumerate(self.section.positions):
             gradient = self.section.gradients[index]
             new_color = self.effect.get_color(
-                self.progress(time), gradient, velocity)
+                self.__progress(time), gradient, velocity)
             existing_color = self.light_adapter.get_color(position)
             self.light_adapter.set_color(
                 position, new_color.blended_with(existing_color))
 
-    def progress(self, time):
-        return min((time - self._start_time) / self.duration, 1)
-
     def is_finished(self, time):
-        return self.progress(time) == 1
+        return self.__progress(time) == 1
+    ### End Task Protocol Implementation
+
+    def __progress(self, time):
+        return min((time - self.__start_time) / self.duration, 1)
+
 
 
 class RepeatingTask(Task):
-    """ A task that auto-repeats a task once the task is done """
-    def __init__(self, task, progress_offset=0.0):
+    """ A task that auto-repeats a task. The task being repeated is reset every
+    'duration' seconds. The task will be forcibly restarted if it isn't done
+    by that point in time. The task is expected to execute in a deterministic 
+    way as a function of time.
+     """
+    def __init__(self, task, duration, progress_offset=0.0):
         self.__repeating = True
+        self.duration = duration
         self.progress_offset = progress_offset
         self.task = task
+        self.__finished = False
 
     def start(self, time):
         self.task.start(time)
-        self.task._start_time -= self.task.duration * self.progress_offset
+        self.__start_time = time
 
-    def stop_repeating(self):
-        self.__repeating = False
+    def end(self):
+        """ Call to stop the task """
+        self.__finished = True
 
     def tick(self, time):
-        self.task.tick(time)
-
-    def progress(self, time):
-        return self.task.progress(time)
+        delta_time = (time - self.__start_time) % self.duration
+        self.task.tick(self.__start_time + delta_time)
 
     def is_finished(self, time):
-        # NOTE: there's some precision loss since the task may have
-        # finished before the current time, yet we're restarting the
-        # task at the current time.
-        if self.__repeating and self.task.is_finished(time):
-            self.task._start_time = time
-            return False
-
-        return self.task.is_finished(time)
+        return self.__finished
 
 
-class MidiOffLightEffectTask(LightEffectTask):
+class MidiOffTask(Task):
     """A special light effect task that reacts to the state of a particular
     MIDI note. The task sustains the first animation frame until the input note
     is off"""
@@ -221,26 +225,29 @@ class MidiOffLightEffectTask(LightEffectTask):
         self.task = task
         self.pitch = pitch
         self.__midi_monitor = midi_monitor
+        self.__note_duration = None  # TBD once note off is received
 
     def start(self, time):
         self.task.start(time)
         self.__midi_monitor.register(self)
-        self.__note_off_received = False
+        self.__start_time = time
 
     def received_midi(self, rtmidi_message):
         if (rtmidi_message.isNoteOff() and
                 rtmidi_message.getNoteNumber() == self.pitch):
-            self.__note_off_received = True
+            self.__note_duration = time.time() - self.__start_time
             self.__midi_monitor.unregister(self)
 
     def tick(self, time):
-        if not self.__note_off_received:
-            self.task._start_time = time
-
-        self.task.tick(time)
-
-    def progress(self, time):
-        return self.task.progress(time)
+        if not self.__note_duration:
+            # if note hasn't been lifted yet, freeze at the first frame
+            self.task.tick(self.__start_time)
+        else:
+            # once note has been lifted, allow the tick to start
+            self.task.tick(time - self.__note_duration)
 
     def is_finished(self, time):
-        return self.task.is_finished(time)
+        if not self.__note_duration:
+            return False
+        else:
+            return self.task.is_finished(time - self.__note_duration)
