@@ -67,7 +67,7 @@ class LightSection:
 class LightEffect:
 
     @abstractmethod
-    def get_color(self, progress, gradient, velocity):
+    def get_color(self, progress, gradient):
         """Called for each light effect task tick"""
         pass
 
@@ -78,7 +78,7 @@ class SolidColor(LightEffect):
     def __init__(self, color):
         self.color = color
 
-    def get_color(self, progress, gradient, velocity):
+    def get_color(self, progress, gradient):
         return self.color.with_alpha(max(0, 1 - progress))
 
 
@@ -89,7 +89,7 @@ class Gradient(LightEffect):
         self.color1 = color1
         self.color2 = color2
 
-    def get_color(self, progress, gradient, velocity):
+    def get_color(self, progress, gradient):
         # value of 2 would show whole sin wave on screen,
         # value of 4 would show half sine wave
         period = 3
@@ -105,7 +105,7 @@ class Meteor(LightEffect):
         # 1 provides a 'standard' length, 0.5 will halve, 2 will double
         self.tail_length = tail_length
 
-    def get_color(self, progress, gradient, velocity):
+    def get_color(self, progress, gradient):
         meteor_head_length = 0.05
         meteor_tail_length = self.tail_length * 0.2
 
@@ -169,11 +169,10 @@ class LightEffectTask(Task):
         self.__start_time = time
 
     def tick(self, time):
-        velocity = 1.0 * len(self.section.positions) / self.duration
         for index, position in enumerate(self.section.positions):
             gradient = self.section.gradients[index]
             new_color = self.effect.get_color(
-                self.__progress(time), gradient, velocity)
+                self.__progress(time), gradient)
             existing_color = self.light_adapter.get_color(position)
             self.light_adapter.set_color(
                 position, new_color.blended_with(existing_color))
