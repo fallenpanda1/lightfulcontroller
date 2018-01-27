@@ -141,9 +141,7 @@ class HangingDoorLightsShow:
             pitch = rtmidi_message.getNoteNumber()
             if pitch in self.note_map:
                 task = copy.copy(self.note_map[pitch])
-                # only allow 1 task to run at a time for one pitch
-                task.uniquetag = pitch
-                self.__scheduler.add(task)
+                self.__scheduler.add(task, unique_tag=pitch)
 
     def special_message_received(self):
         if not self.__is_in_end_mode:
