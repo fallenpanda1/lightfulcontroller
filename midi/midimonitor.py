@@ -68,10 +68,3 @@ class MidiMonitor:
         """ Unregister an observer """
         if observer in self.__observers:
             self.__observers.remove(observer)
-
-    def send_virtual_note(self, offset):
-        # TODO: refactor to use send_midi_message
-        test_note_on_message = rtmidi.MidiMessage().noteOn(0, 30 + offset, 127)
-        test_note_off_message = rtmidi.MidiMessage().noteOff(0, 30 + offset)
-        self.handle_midi_message(test_note_on_message)
-        self.handle_midi_message(test_note_off_message)
