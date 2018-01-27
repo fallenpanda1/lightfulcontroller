@@ -4,12 +4,12 @@ import time
 import rtmidi
 from pymaybe import maybe
 
-from midi.midieditor import MidiEditor
-from midi.midieditor import RangeVelocityFilter
-from midi.midirecording import MetronomeTask
-from midi.midirecording import MidiLooper
-from midi.midirecording import MidiRecorder
-from midi.midirecording import PlayMidiTask
+from midi.midi_editor import MidiEditor
+from midi.midi_editor import RangeVelocityFilter
+from midi.midi_recording import MetronomeTask
+from midi.midi_recording import MidiLooper
+from midi.midi_recording import MidiRecorder
+from midi.midi_recording import PlayMidiTask
 
 logger = logging.getLogger("global")
 

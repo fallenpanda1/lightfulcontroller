@@ -7,7 +7,7 @@ from array import array
 
 import serial
 
-import lightfulwindows
+import lightful_windows
 
 logger = logging.getLogger("global")
 
@@ -126,7 +126,7 @@ class VirtualArduinoClient:
         self.__lights_show = lights_show
 
         # open virtual window
-        self.virtualpixelwindow = lightfulwindows.VirtualNeopixelWindow(
+        self.virtualpixelwindow = lightful_windows.VirtualNeopixelWindow(
             800, 600)
         self.virtualpixelwindow.start()
 

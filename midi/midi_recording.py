@@ -6,7 +6,7 @@ import mido
 
 from lightful_tasks import RepeatingTask
 from midi.conversions import convert_to_mido
-from midi.midiplaying import PlayMidiTask
+from midi.midi_playing import PlayMidiTask
 from scheduler.scheduler import Task
 
 logger = logging.getLogger("global")

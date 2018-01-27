@@ -5,12 +5,12 @@ import time
 
 from pymaybe import maybe
 
-import lightfulwindows
+import lightful_windows
 from curses_log_handler import CursesLogHandler
 from keyboard_monitor import KeyboardMonitor
-from light_engine.pixeladapter import ArduinoPixelAdapter, VirtualArduinoClient
+from light_engine.pixel_adapter import ArduinoPixelAdapter, VirtualArduinoClient
 from lightful_shortcuts import LightfulKeyboardShortcuts
-from midi.midimonitor import MidiMonitor
+from midi.midi_monitor import MidiMonitor
 from profiler import Profiler
 from scheduler.scheduler import Scheduler
 from shows import hanging_door_lights_show
@@ -137,7 +137,7 @@ def main_loop(window):
         profiler.avg("character read")
 
         # update & render loop for lightful windows
-        maybe(lightfulwindows).tick()
+        maybe(lightful_windows).tick()
 
         profiler.avg("lightful window rendering")
 
