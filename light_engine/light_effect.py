@@ -65,10 +65,25 @@ class LightSection:
 
 
 class LightEffect:
+    """An effect to apply on a string of lights.
+
+    Light effects are represented by a function 'get_color' that describes
+    each light in a string.
+    """
 
     @abstractmethod
     def get_color(self, progress, gradient):
-        """Called for each light effect task tick"""
+        """Called for each light effect task tick
+
+        Attributes:
+            progress: how far along in the animation task we are.
+                normalized value between 0 and 1 no matter what the
+                actual animation duration is.
+            gradient: which light position we're describing. normalized
+                value between 0 and 1 no matter how many lights there
+                are (e.g. the middle light in a strip would have gradient
+                value 0.5)
+        """
         pass
 
 
@@ -153,9 +168,13 @@ class LightEffectTaskFactory:
 class LightEffectTask(Task):
     """An effect task contains a light effect and all the state around
     animating it.
-    - the effect itself
-    - section of light the effect is animating on
-    - the time/lifecycle of the effect
+
+    Attributes:
+        effect: the actual effect (see LightEffect)
+        section: a LightSection object describing the light(s) this
+            animation is running on
+        duration: the time/lifecycle of the effect
+        light_adapter: we need this for actually setting light colors
      """
 
     def __init__(self, effect, section, duration, light_adapter):
@@ -164,11 +183,12 @@ class LightEffectTask(Task):
         self.duration = duration
         self.light_adapter = light_adapter
 
-    ### Task Protocol Implementation
     def start(self, time):
+        """ Task implementation """
         self.__start_time = time
 
     def tick(self, time):
+        """ Task implementation """
         for index, position in enumerate(self.section.positions):
             gradient = self.section.gradients[index]
             new_color = self.effect.get_color(
@@ -178,8 +198,8 @@ class LightEffectTask(Task):
                 position, new_color.blended_with(existing_color))
 
     def is_finished(self, time):
+        """ Task implementation """
         return self.__progress(time) == 1
-    ### End Task Protocol Implementation
 
     def __progress(self, time):
         return min((time - self.__start_time) / self.duration, 1)
@@ -189,7 +209,7 @@ class LightEffectTask(Task):
 class RepeatingTask(Task):
     """ A task that auto-repeats a task. The task being repeated is reset every
     'duration' seconds. The task will be forcibly restarted if it isn't done
-    by that point in time. The task is expected to execute in a deterministic 
+    by that point in time. The task is expected to execute in a deterministic
     way as a function of time.
      """
     def __init__(self, task, duration, progress_offset=0.0):
@@ -200,25 +220,31 @@ class RepeatingTask(Task):
         self.__finished = False
 
     def start(self, time):
+        """ Task implementation """
         self.task.start(time)
         self.__start_time = time
+
+    def tick(self, time):
+        """ Task implementation """
+        delta_time = (time - self.__start_time) % self.duration
+        self.task.tick(self.__start_time + delta_time)
+
+    def is_finished(self, time):
+        """ Task implementation """
+        return self.__finished
 
     def end(self):
         """ Call to stop the task """
         self.__finished = True
 
-    def tick(self, time):
-        delta_time = (time - self.__start_time) % self.duration
-        self.task.tick(self.__start_time + delta_time)
-
-    def is_finished(self, time):
-        return self.__finished
-
 
 class MidiOffTask(Task):
-    """A special light effect task that reacts to the state of a particular
-    MIDI note. The task sustains the first animation frame until the input note
-    is off"""
+    """A task that composes another task and modifies it to reacts to
+    a MIDI note event.
+
+    The composed task is frozen at time=0 until the note with the
+    specified pitch is released (note off event), at which point
+    we unfreeze and start the composed task. """
 
     def __init__(self, task, pitch, midi_monitor):
         self.task = task
@@ -230,12 +256,6 @@ class MidiOffTask(Task):
         self.task.start(time)
         self.__midi_monitor.register(self)
         self.__start_time = time
-
-    def received_midi(self, rtmidi_message):
-        if (rtmidi_message.isNoteOff() and
-                rtmidi_message.getNoteNumber() == self.pitch):
-            self.__note_duration = time.time() - self.__start_time
-            self.__midi_monitor.unregister(self)
 
     def tick(self, time):
         if not self.__note_duration:
@@ -250,3 +270,9 @@ class MidiOffTask(Task):
             return False
         else:
             return self.task.is_finished(time - self.__note_duration)
+
+    def received_midi(self, rtmidi_message):
+        if (rtmidi_message.isNoteOff() and
+                rtmidi_message.getNoteNumber() == self.pitch):
+            self.__note_duration = time.time() - self.__start_time
+            self.__midi_monitor.unregister(self)
