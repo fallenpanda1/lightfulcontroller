@@ -8,8 +8,8 @@ logger = logging.getLogger("global")
 class Task(ABC):
     """A 'lightful' time-based task.
 
-    A task is scheduled to tick once per scheduler loop until done. For each
-    tick, the task is given the current time. Tasks can be used for
+    A task is scheduled to tick once per scheduler loop until done. For
+    each tick, the task is given the current time. Tasks can be used for
     """
 
     @abstractmethod
@@ -18,15 +18,13 @@ class Task(ABC):
 
     @abstractmethod
     def tick(self, time):
-        """A task 'tick'.
-
-        Args:
-            time: time since task start, in seconds.
-        """
+        """A task 'tick'. 'time' is seconds since task start"""
         pass
 
     @abstractmethod
     def is_finished(self, time):
+        """Tasks should return true when finished. Will be scheduled
+        for removal once true"""
         pass
 
 
@@ -98,7 +96,7 @@ class Scheduler:
         task.start()
 
     def remove_by_unique_tag(self, unique_tag):
-        """ Remove task by its unique tag """
+        """Remove task from the scheduler by its unique tag"""
         if unique_tag is None:
             return
 
@@ -109,6 +107,7 @@ class Scheduler:
                 return
 
     def remove(self, task):
+        """Remove a task from the scheduler"""
         for index, task_wrapper in enumerate(self.task_wrappers):
             if task == task_wrapper.task:
                 # only safe to remove in loop because we're returning after
@@ -116,10 +115,13 @@ class Scheduler:
                 return
 
     def clear(self):
+        """Remove all tasks from the scheduler"""
         self.task_wrappers.clear()
 
     def tick(self):
-        """do the animation!"""
+        """Scheduler 'tick' to only be called by the run loop. Goes through
+        scheduled tasks and forwards ticks to them and also removes finished
+        tasks"""
 
         now = time.time()
 

@@ -107,6 +107,8 @@ def main_loop(window):
     profiler.enabled = False
 
     while True:
+        """The main loop gives every system in this app a chance to
+        perform any necessary actions"""
         profiler.avg("loop start")
 
         midi_scheduler.tick()
@@ -117,6 +119,9 @@ def main_loop(window):
         midi_monitor.listen_loop()
         profiler.avg("midi listen")
 
+        # Pixel push protocol involves data transfer over serial. Instead
+        # of blocking the main loop on serial I/O, we just skip animation
+        # rendering and serial push if previous serial push hasn't completed
         if pixel_adapter.ready_for_push():
             # tick animation scheduler to update pixels
             animation_scheduler.tick()
