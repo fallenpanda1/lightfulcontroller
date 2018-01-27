@@ -21,7 +21,7 @@ class HangingDoorLightsShow:
         self.__pixel_adapter = pixel_adapter
         self.__midi_monitor = midi_monitor
         self.__midi_monitor.register(self)
-        self.lightfactory = LightEffectTaskFactory(self.__pixel_adapter, 
+        self.lightfactory = LightEffectTaskFactory(self.__pixel_adapter,
             self.__midi_monitor)
         # TODO: this is exactly the kind of thing I don't want to have to do
         # for each song!!

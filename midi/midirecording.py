@@ -20,8 +20,8 @@ class MetronomeTask(Task):
         self.tempo = tempo
         self.beats_per_measure = beats_per_measure
 
-    def start(self, time):
-        self.last_tick_time = time
+    def start(self):
+        self.last_tick_time = 0
 
     def tick(self, time):
         next_tick_time = self.last_tick_time + 1.0 * self.tempo / 1000000

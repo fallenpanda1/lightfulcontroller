@@ -183,9 +183,9 @@ class LightEffectTask(Task):
         self.duration = duration
         self.light_adapter = light_adapter
 
-    def start(self, time):
+    def start(self):
         """ Task implementation """
-        self.__start_time = time
+        pass
 
     def tick(self, time):
         """ Task implementation """
@@ -202,7 +202,7 @@ class LightEffectTask(Task):
         return self.__progress(time) == 1
 
     def __progress(self, time):
-        return min((time - self.__start_time) / self.duration, 1)
+        return min(time / self.duration, 1)
 
 
 
@@ -219,15 +219,15 @@ class RepeatingTask(Task):
         self.task = task
         self.__finished = False
 
-    def start(self, time):
+    def start(self):
         """ Task implementation """
-        self.task.start(time)
-        self.__start_time = time
+        self.task.start()
+
 
     def tick(self, time):
         """ Task implementation """
-        delta_time = (time - self.__start_time) % self.duration
-        self.task.tick(self.__start_time + delta_time)
+        modded_time = time % self.duration
+        self.task.tick(modded_time)
 
     def is_finished(self, time):
         """ Task implementation """
@@ -252,15 +252,15 @@ class MidiOffTask(Task):
         self.__midi_monitor = midi_monitor
         self.__note_duration = None  # TBD once note off is received
 
-    def start(self, time):
-        self.task.start(time)
+    def start(self):
+        self.task.start()
         self.__midi_monitor.register(self)
-        self.__start_time = time
+        self.__start_time = time.time()
 
     def tick(self, time):
         if not self.__note_duration:
             # if note hasn't been lifted yet, freeze at the first frame
-            self.task.tick(self.__start_time)
+            self.task.tick(0)
         else:
             # once note has been lifted, allow the tick to start
             self.task.tick(time - self.__note_duration)

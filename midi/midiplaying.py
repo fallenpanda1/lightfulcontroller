@@ -23,9 +23,9 @@ class PlayMidiTask(Task):
         self.__mido_events = mido_events.copy()
         self.__midi_out = midi_monitor
 
-    def start(self, time):
+    def start(self):
         """ Play the midi """
-        self.__last_stored_time = time
+        self.__last_stored_time = 0
         self.is_muted = False
         logger.info("MidiPlayer -> play")
 
