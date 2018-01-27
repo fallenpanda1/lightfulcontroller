@@ -108,12 +108,12 @@ class LightfulKeyboardShortcuts:
 
     def edit_midi_file(self):
         editor = MidiEditor("recording1.mid", "recording1_baseline.mid")
-        filter = RangeVelocityFilter(range(0, 70), 0)
-        editor.apply_filter(filter)
+        velocity_filter = RangeVelocityFilter(range(0, 70), 0)
+        editor.apply_filter(velocity_filter)
         editor.save()
 
         editor = MidiEditor("recording1.mid", "recording1_melody.mid")
-        filter = RangeVelocityFilter(range(70, 255), 0)
-        editor.apply_filter(filter)
+        velocity_filter = RangeVelocityFilter(range(70, 255), 0)
+        editor.apply_filter(velocity_filter)
         editor.save()
         logger.info("write successful!")

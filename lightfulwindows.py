@@ -12,10 +12,6 @@ when being shut down. Seems harmless.. suppress by running 'defaults write
 org.python.python ApplePersistenceIgnoreState NO' command line.
 """
 
-MAX_PARTICLES = 2000
-MAX_ADD_PARTICLES = 100
-GRAVITY = -100
-
 
 def tick():
     """global tick for all Pyglet windows"""
