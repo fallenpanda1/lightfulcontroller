@@ -34,7 +34,7 @@ class _TaskWrapper:
 
     Attributes:
         task: Task being wrapped.
-        start_time: System time (using time.time()) the task was started.
+        start_time: System time (using time.time()) when the task was started.
         priority: Numerical priority of the task relative to other tasks.
         unique_tag: Unique tag for the task. Only one task can be running
             at a time for a task.
