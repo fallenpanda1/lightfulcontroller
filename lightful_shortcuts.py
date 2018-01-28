@@ -5,12 +5,12 @@ from threading import Timer
 import rtmidi
 from pymaybe import maybe
 
-from midi.midi_editor import MidiEditor
-from midi.midi_editor import RangeVelocityFilter
-from midi.midi_looper import MidiLooper
-from midi.midi_playing import PlayMidiTask
-from midi.midi_recording import MetronomeTask
-from midi.midi_recording import MidiRecorder
+from midi.editor import MidiEditor
+from midi.editor import RangeVelocityFilter
+from midi.looper import MidiLooper
+from midi.player import PlayMidiTask
+from midi.recorder import MetronomeTask
+from midi.recorder import MidiRecorder
 
 logger = logging.getLogger("global")
 

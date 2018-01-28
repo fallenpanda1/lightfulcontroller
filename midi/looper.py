@@ -4,8 +4,8 @@ from time import time
 from lightful_tasks import RepeatingTask
 from midi.conversions import convert_to_seconds
 from midi.conversions import convert_to_ticks
-from midi.midi_playing import PlayMidiTask
-from midi.midi_recording import MidiRecorder
+from midi.player import PlayMidiTask
+from midi.recorder import MidiRecorder
 
 logger = logging.getLogger("global")
 
