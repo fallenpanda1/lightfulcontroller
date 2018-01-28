@@ -7,9 +7,6 @@ from scheduler.scheduler import Task
 
 logger = logging.getLogger("global")
 
-DEFAULT_TEMPO = 500000
-DEFAULT_TICKS_PER_BEAT = 9600
-
 
 class PlayMidiTask(Task):
     """ Plays a MIDI file """
