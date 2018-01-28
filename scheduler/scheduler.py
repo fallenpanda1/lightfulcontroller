@@ -134,7 +134,10 @@ class Scheduler:
                 still_active.append(task_wrapper)
         self.task_wrappers = still_active
 
-        # TODO: sort the effects in render layer order
+        # sort the effects in order of start time
+        # TODO: need to implement sort by priority as well
+        self.task_wrappers.sort(key=lambda task_wrapper: task_wrapper.start_time)
+
         for task_wrapper in self.task_wrappers:
             task_wrapper.task.tick(now - task_wrapper.start_time)
 
