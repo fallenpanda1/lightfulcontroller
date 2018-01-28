@@ -8,8 +8,8 @@ from pymaybe import maybe
 from midi.editor import MidiEditor
 from midi.editor import RangeVelocityFilter
 from midi.looper import MidiLooper
+from midi.metronome import MetronomeTask
 from midi.player import PlayMidiTask
-from midi.recorder import MetronomeTask
 from midi.recorder import MidiRecorder
 
 logger = logging.getLogger("global")
