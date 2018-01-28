@@ -44,6 +44,7 @@ class MidiLooper:
                  midi_scheduler):
         self.tempo = tempo  # reminder: nanoseconds per beat
         self.ticks_per_beat = ticks_per_beat
+        self.beats_per_measure = beats_per_measure
         self.start_time = time()
         self.__midi_monitor = midi_monitor
         self.__midi_scheduler = midi_scheduler
@@ -51,8 +52,16 @@ class MidiLooper:
         self.isplaying = False
 
     def ticks_per_measure(self):
-        """ returns the number of ticks in a measure """
+        """returns number of ticks in a measure"""
         return self.ticks_per_beat * self.beats_per_measure
+
+    def seconds_per_measure(self):
+        """returns number of seconds in a measure"""
+        return convert_to_seconds(
+            ticks=self.ticks_per_measure(),
+            tempo=self.tempo,
+            ticks_per_beat=self.ticks_per_beat
+        )
 
     def record(self, start_time):
         """ Start recording
@@ -103,8 +112,13 @@ class MidiLooper:
 
     def play(self):
         """ Play last saved recording """
-        self.__play_task = RepeatingTask(PlayMidiTask(self.__recorder.recorded_notes,
-                                        self.__midi_monitor))
+        self.__play_task = RepeatingTask(
+            PlayMidiTask(
+                self.__recorder.recorded_notes,
+                self.__midi_monitor
+            ),
+            duration=self.seconds_per_measure()
+        )
         self.__midi_scheduler.add(self.__play_task)
 
     def pause(self):
@@ -153,6 +167,7 @@ class MidiRecorder:
         self.__midi_monitor.unregister(self)
         if save_to_file:
             self.__midi_file.save(self.file_name)
+        self.recorded_notes = list(self.__midi_file)
         self.__last_message_time = None
 
     def received_midi(self, rtmidi_message):
