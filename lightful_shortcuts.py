@@ -7,10 +7,10 @@ from pymaybe import maybe
 
 from midi.midi_editor import MidiEditor
 from midi.midi_editor import RangeVelocityFilter
+from midi.midi_looper import MidiLooper
+from midi.midi_playing import PlayMidiTask
 from midi.midi_recording import MetronomeTask
-from midi.midi_recording import MidiLooper
 from midi.midi_recording import MidiRecorder
-from midi.midi_recording import PlayMidiTask
 
 logger = logging.getLogger("global")
 

@@ -1,10 +1,23 @@
-# Conversions between mido and rtmidi libraries
 import mido
 import rtmidi
 import logging
 
 logger = logging.getLogger("global")
 
+# Convert between seconds and MIDI ticks
+
+def convert_to_ticks(time_in_seconds, tempo, ticks_per_beat):
+    """Convert time in seconds to MIDI ticks"""
+    ticks_per_second = tempo * 1e-6 / ticks_per_beat
+    return round(time_in_seconds / ticks_per_second)
+
+
+def convert_to_seconds(ticks, tempo, ticks_per_beat):
+    """Convert MIDI ticks to time in seconds"""
+    ticks_per_second = tempo * 1e-6 / ticks_per_beat
+    return ticks * ticks_per_second
+
+# Convert between MIDI messages from the mido and rtmidi libraries
 
 def convert_to_rt(mido_message):
     """ Convert a mido message to an rtmidi message """
