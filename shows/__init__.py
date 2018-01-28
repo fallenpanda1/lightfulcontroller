@@ -1,5 +1,8 @@
 # dynamically set __all__ to every py/pyc file in this directory.
-# this is so 'from shows import *' imports all shows.
+# this is so 'from shows import *' imports all shows. this would let us
+# potentially dynamically populate UI with a list of shows and allow a show
+# to be instantiated without needing some sort of factory.
+# (TODO: is avoiding some factory code REALLY necessary?)
 from os.path import dirname, basename, isfile
 import glob
 modules = glob.glob(dirname(__file__)+"/*.py*")
