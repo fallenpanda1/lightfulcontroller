@@ -91,7 +91,7 @@ class LightfulKeyboardShortcuts:
         if not self.midi_looper:
             self.midi_looper = MidiLooper(
                 tempo=500000,
-                ticks_per_beat=1,
+                ticks_per_beat=120,
                 beats_per_measure=4,
                 midi_monitor=self.midi_monitor,
                 midi_scheduler=self.midi_scheduler
@@ -125,7 +125,7 @@ class LightfulKeyboardShortcuts:
         """Note on event, then after a delay, note off event"""
         self.send_note_on_event()
 
-        Timer(0.5, self.send_note_off_event, ()).start()
+        Timer(0.2, self.send_note_off_event, ()).start()
 
     def send_note_on_event(self):
         note_on = rtmidi.MidiMessage().noteOn(0, 60, 100)
