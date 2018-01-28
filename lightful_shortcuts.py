@@ -1,5 +1,6 @@
 import logging
 import time
+from threading import Timer
 
 import rtmidi
 from pymaybe import maybe
@@ -50,6 +51,8 @@ class LightfulKeyboardShortcuts:
                                self.add_metronome)
         k.add_keydown_callback('e', "(e)dit MIDI file", self.edit_midi_file)
         k.add_keydown_callback('q', "(q)uit", self.exit_app)
+        k.add_keydown_callback('n', "(n)ote on/off event",
+                               self.send_note_on_off_event)
 
     def shortcuts_description(self):
         descriptions = self.keyboard_monitor.descriptions_by_key.values()
@@ -117,3 +120,17 @@ class LightfulKeyboardShortcuts:
         editor.apply_filter(velocity_filter)
         editor.save()
         logger.info("write successful!")
+
+    def send_note_on_off_event(self):
+        """Note on event, then after a delay, note off event"""
+        self.send_note_on_event()
+
+        Timer(0.5, self.send_note_off_event, ()).start()
+
+    def send_note_on_event(self):
+        note_on = rtmidi.MidiMessage().noteOn(0, 60, 100)
+        self.midi_monitor.send_midi_message(note_on)
+
+    def send_note_off_event(self):
+        note_off = rtmidi.MidiMessage().noteOff(0, 60)
+        self.midi_monitor.send_midi_message(note_off)
