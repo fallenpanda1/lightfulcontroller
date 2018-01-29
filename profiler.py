@@ -1,5 +1,6 @@
 import logging
 import time
+from collections import OrderedDict
 
 logger = logging.getLogger("global")
 
@@ -8,9 +9,9 @@ class Profiler:
 
     def __init__(self, seconds_per_average=2):
         self.last_recorded_time = time.time()
-        self.times_for_identifier = {}
+        self.times_by_id = OrderedDict()
         self.seconds_per_average = seconds_per_average
-        self.last_printed_average_time = time.time()
+        self.last_printed_average_time = None
         self.enabled = True
 
     def time(self, identifier):
@@ -30,25 +31,35 @@ class Profiler:
 
         delta_time = self.increment_time_and_get_delta()
 
-        if identifier not in self.times_for_identifier:
-            self.times_for_identifier[identifier] = (0, 0)
+        if identifier not in self.times_by_id:
+            self.times_by_id[identifier] = (0, 0, 0)
 
-        cumulative_time, counter = self.times_for_identifier[identifier]
+        cumulative_time, counter, max_time = self.times_by_id[identifier]
         cumulative_time += delta_time
+        max_time = max(delta_time, max_time)
         counter += 1
-        self.times_for_identifier[identifier] = (cumulative_time, counter)
-
-        if self.last_printed_average_time is None:
-            self.last_printed_average_time = time.time()
+        self.times_by_id[identifier] = (cumulative_time, counter, max_time)
 
         now = time.time()
+
+        if self.last_printed_average_time is None:
+            self.last_printed_average_time = now
+
         if (now > self.last_printed_average_time +
                 self.seconds_per_average):
             logger.info("Average Times: ")
-            for identifier, pair in self.times_for_identifier.items():
-                cumulative_time, counter = pair
-                logger.info(str(identifier) + ": " +
-                            str(cumulative_time / counter))
+            for identifier, triplet in self.times_by_id.items():
+                cumulative_time, counter, max_time = triplet
+
+                DISPLAY_LEN = 20
+                fixed_length_id = str(identifier).ljust(DISPLAY_LEN)[:DISPLAY_LEN]
+                logger.info(fixed_length_id + ": " +
+                            "%.3f" % (cumulative_time / counter * 1000) + "ms" +
+                            " max: %.3f" % (max_time * 1000) + "ms")
+
+                # reset back to nothing (but still keep keys around to maintain
+                # original order for OrderedDict)
+                self.times_by_id[identifier] = (0, 0, 0)
             self.last_printed_average_time = now
 
     def increment_time_and_get_delta(self):
