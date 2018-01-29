@@ -8,6 +8,7 @@ logger = logging.getLogger("global")
 
 class MetronomeTask(Task):
     """ Metronome """
+
     def __init__(self, tempo, beats_per_measure):
         self.tempo = tempo
         self.beats_per_measure = beats_per_measure
@@ -20,9 +21,9 @@ class MetronomeTask(Task):
         next_tick_time = self.__last_tick_time + 1.0 * self.tempo / 1000000
         if time >= next_tick_time:
             self.__last_tick_time = next_tick_time
-            self._ring()
+            self._play_beat()
 
-    def _ring(self):
+    def _play_beat(self):
         sys.stdout.write('\a')
         sys.stdout.flush()
 
