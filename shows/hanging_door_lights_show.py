@@ -131,8 +131,6 @@ class HangingDoorLightsShow:
 
     def received_midi(self, rtmidi_message):
         if rtmidi_message.isNoteOn():
-            logger.info("received note_on:" + str(rtmidi_message))
-
             if rtmidi_message.getNoteNumber() == 0:
                 # hacky special message
                 self.special_message_received()
