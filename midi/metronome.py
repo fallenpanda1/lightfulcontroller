@@ -7,7 +7,10 @@ logger = logging.getLogger("global")
 
 
 class MetronomeTask(Task):
-    """ Metronome """
+    """Metronome that plays audio beats based on tempo and time
+    signature. Also serves as a time-keeper for other systems that want
+    to keep in sync.
+    """
 
     def __init__(self, tempo, beats_per_measure):
         self.tempo = tempo
@@ -28,4 +31,4 @@ class MetronomeTask(Task):
         sys.stdout.flush()
 
     def is_finished(self, time):
-        return False  # never finished
+        return False  # never finished for now

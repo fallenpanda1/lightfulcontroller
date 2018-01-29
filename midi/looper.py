@@ -4,6 +4,7 @@ from time import time
 from lightful_tasks import RepeatingTask
 from midi.conversions import convert_to_seconds
 from midi.conversions import convert_to_ticks
+from midi.metronome import MetronomeTask
 from midi.player import PlayMidiTask
 from midi.recorder import MidiRecorder
 
@@ -19,10 +20,16 @@ class MidiLooper:
         self.ticks_per_beat = ticks_per_beat
         self.beats_per_measure = beats_per_measure
         self.start_time = time()
+        # TODO: metronome should be DI'ed since loopers and players
+        # will share the same one
+        self.metronome = MetronomeTask(
+            tempo=self.tempo,
+            beats_per_measure=self.beats_per_measure
+        )
         self.__midi_monitor = midi_monitor
         self.__midi_scheduler = midi_scheduler
 
-        self.isplaying = False
+        self.is_playing = False
 
     def ticks_per_measure(self):
         """returns number of ticks in a measure"""
@@ -46,6 +53,7 @@ class MidiLooper:
             tempo=self.tempo,
             ticks_per_beat=self.ticks_per_beat
         )
+        self.__midi_scheduler.add(self.metronome)
         self.__recorder.start()
 
         delta_time = time() - start_time
