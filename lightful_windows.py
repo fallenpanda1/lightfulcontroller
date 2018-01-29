@@ -37,7 +37,7 @@ class VirtualNeopixelWindow(window.Window):
     def start(self):
         self.batch = graphics.Batch()
         self.particles = list()
-        self.particle_image = image.load('media/particle.png')
+        self.particle_image = image.load('media/images/particle.png')
         self.particle_sprites = []
         self.time_to_draw_next_frame = time.time()
 
