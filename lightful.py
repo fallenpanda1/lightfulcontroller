@@ -1,14 +1,17 @@
 import argparse
 import curses
 import logging
+import multiprocessing
 import time
+from multiprocessing import Process
+from multiprocessing import Queue
+import serial
 
 from pymaybe import maybe
 
-import lightful_windows
 from curses_log_handler import CursesLogHandler
 from keyboard_monitor import KeyboardMonitor
-from light_engine.pixel_adapter import ArduinoPixelAdapter, VirtualArduinoClient
+from light_engine.pixel_adapter import ArduinoPixelAdapter
 from lightful_shortcuts import LightfulKeyboardShortcuts
 from midi.monitor import MidiMonitor
 from profiler import Profiler
@@ -23,7 +26,6 @@ curses.noecho()
 stdscr.nodelay(1)  # set getch() non-blocking
 
 pixel_adapter = None
-virtual_client = None
 lights_show = None
 
 midi_monitor = None
@@ -71,11 +73,18 @@ def main_loop(window):
     global pixel_adapter
     num_pixels = 100
     serial_port_id = '/dev/tty.usbmodem1411'  # TODO: make configurable
-    global virtual_client
     if args.virtualpixels:
-        logger.info("using simulated arduino/neopixels")
-        virtual_client = VirtualArduinoClient(num_pixels=num_pixels)
-        serial_port_id = virtual_client.port_id()
+        multiprocessing.set_start_method('spawn')
+        logger.info("using simulated arduino/neopixels handled on separate process")
+        render_queue = Queue()
+        render_process = Process(target=render_loop, args=(render_queue, num_pixels))
+        render_process.start()
+        # render loop expected to give us the port on which its listening for
+        # arduino serial messages
+        logger.info("GETTING")
+        serial_port_id = render_queue.get()
+        logger.info("YAH GOT VIRTUAL PORT!!: " + serial_port_id)
+
     pixel_adapter = ArduinoPixelAdapter(
         serial_port_id=serial_port_id, baud_rate=115200, num_pixels=num_pixels)
     pixel_adapter.start()
@@ -85,14 +94,10 @@ def main_loop(window):
     lights_show = hanging_door_lights_show.HangingDoorLightsShow(
         animation_scheduler, pixel_adapter, midi_monitor)
 
-    # TODO: add protocol for light shows to describe layout for simulation
-    # configure neopixel simulator with light show's data
-    maybe(virtual_client).start(lights_show)
-
     # create keyboard monitor
     keyboard_monitor = KeyboardMonitor()
     keyboard_shortcuts = LightfulKeyboardShortcuts(
-        keyboard_monitor, pixel_adapter, virtual_client,
+        keyboard_monitor, pixel_adapter,
         lights_show, midi_monitor, animation_scheduler, midi_scheduler
     )
     keyboard_shortcuts.register_shortcuts()
@@ -136,14 +141,17 @@ def main_loop(window):
 
         profiler.avg("character read")
 
-        # update & render loop for lightful windows
-        maybe(lightful_windows).tick()
-
-        profiler.avg("lightful window rendering")
-
-        # have to sleep at least a short time to allow any other threads to do
-        # their stuff (e.g. midi player)
+        # sleep at least a short time to allow any other threads to do
+        # their stuff (though we currently don't have any)
         time.sleep(0.001)
 
 
-curses.wrapper(main_loop)
+def render_loop(queue, num_pixels):
+    from light_engine.virtual_pixels import VirtualArduinoClient
+    virtual_client = VirtualArduinoClient(num_pixels=num_pixels)
+    virtual_port_id = virtual_client.port_id()
+    queue.put(virtual_port_id)
+    virtual_client.loop()
+
+if __name__ == '__main__':
+    curses.wrapper(main_loop)

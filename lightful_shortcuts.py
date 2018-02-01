@@ -19,12 +19,11 @@ class LightfulKeyboardShortcuts:
     """ App-specific keyboard shortcuts """
     # NOTE: might want to refactor some/all of these
     # to not just be keyboard toggled
-    def __init__(self, keyboard_monitor, pixel_adapter, virtual_client,
+    def __init__(self, keyboard_monitor, pixel_adapter,
                  lights_show, midi_monitor, animation_scheduler,
                  midi_scheduler):
         self.keyboard_monitor = keyboard_monitor
         self.pixel_adapter = pixel_adapter
-        self.virtual_client = virtual_client
         self.lights_show = lights_show
         self.midi_monitor = midi_monitor
         self.animation_scheduler = animation_scheduler
@@ -62,7 +61,8 @@ class LightfulKeyboardShortcuts:
         self.lights_show.clear_lights()
         self.pixel_adapter.stop()
         self.midi_monitor.stop()
-        maybe(self.virtual_client).stop()
+        # TODO: stop the render process!
+        #maybe(self.virtual_client).stop()
         exit()
 
     # TODO: recording/playing seem like they deserve being in a dedicated
