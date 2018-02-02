@@ -158,17 +158,14 @@ def render_process_loop(queue, num_pixels):
     # so it can connect
     virtual_port_id = virtual_client.port_id()
     queue.put(virtual_port_id)
-    
+
     virtual_client.start()
-    
+
     # render process loop
     while True:
         # tick the virtual Arduino client to respond to any serial input
         # from the main process
         virtual_client.tick()
-
-        # tick lightful Pyglet windows to draw
-        lightful_windows.tick()
 
 if __name__ == '__main__':
     curses.wrapper(main_loop)

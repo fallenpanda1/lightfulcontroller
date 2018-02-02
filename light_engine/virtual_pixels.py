@@ -80,6 +80,11 @@ class VirtualArduinoClient:
                 color_array.append((line[i + 2], line[i + 1], line[i]))
 
             self.virtualpixelwindow.update_with_colors(color_array)
+
+            # TODO: performance is really bad if this is in the render loop
+            # directly. figure out why!
+            lightful_windows.tick()
+
             self.__write_to_master("\n")  # got your message!
 
         time.sleep(0.001)
