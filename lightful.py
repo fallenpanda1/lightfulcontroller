@@ -77,7 +77,7 @@ def main_loop(window):
         multiprocessing.set_start_method('spawn')
         logger.info("using simulated arduino/neopixels handled on separate process")
         render_queue = Queue()
-        render_process = Process(target=render_loop, args=(render_queue, num_pixels))
+        render_process = Process(target=render_process_loop, args=(render_queue, num_pixels))
         render_process.start()
         # render loop expected to give us the port on which its listening for
         # arduino serial messages
@@ -146,12 +146,29 @@ def main_loop(window):
         time.sleep(0.001)
 
 
-def render_loop(queue, num_pixels):
+def render_process_loop(queue, num_pixels):
+    """The render process loop gives all rendering logic time to perform
+    any necessary actions and draws (and communication with the main
+    process)"""
     from light_engine.virtual_pixels import VirtualArduinoClient
+    import lightful_windows
     virtual_client = VirtualArduinoClient(num_pixels=num_pixels)
+
+    # send the virtual serial port id we opened back to the main thread
+    # so it can connect
     virtual_port_id = virtual_client.port_id()
     queue.put(virtual_port_id)
-    virtual_client.loop()
+    
+    virtual_client.start()
+    
+    # render process loop
+    while True:
+        # tick the virtual Arduino client to respond to any serial input
+        # from the main process
+        virtual_client.tick()
+
+        # tick lightful Pyglet windows to draw
+        lightful_windows.tick()
 
 if __name__ == '__main__':
     curses.wrapper(main_loop)

@@ -28,21 +28,8 @@ class VirtualArduinoClient:
             800, 600)
         self.virtualpixelwindow.start()
 
-    def stop(self):
-        self.virtualpixelwindow.close()
+        ## MICROCONTROLLER STARTUP PROTOCOL
 
-    def port_id(self):
-        return os.ttyname(self.__slave)
-
-    def __write_to_master(self, string):
-        if string[-1] != '\n':
-            logger.error(
-                "serial string is expected to end with a \\n character")
-            return
-        self.__serial_writer.write(string.encode())
-        self.__serial_writer.flush()
-
-    def loop(self):
         # wait a little while for the adapter to be initialized before
         # beginning setup protocol
         time.sleep(0.05)
@@ -59,28 +46,40 @@ class VirtualArduinoClient:
 
         self.__write_to_master("\n")  # got your message!
 
-        # TODO: set up above should happen on a background thread, but scary to
-        # do this loop in the background
+        ## THIS CONCLUDES MICROCONTROLLER STARTUP PROTOCOL
 
-        self.start()
+    def stop(self):
+        self.virtualpixelwindow.close()
 
-        while True:
-            line = self.__serial_reader.read(self.__num_pixels * 4)
-            if line:
-                """we should simulate the delay of the Arduino actually setting
-                the neopixels. According to docs: 'One pixel requires 24 bits
-                (8 bits each for red, green blue) — 30 microseconds.'
-                https://learn.adafruit.com/adafruit-neopixel-uberguide/advanced-coding"""  # noqa
-                time.sleep(0.000030 * self.__num_pixels)
+    def port_id(self):
+        return os.ttyname(self.__slave)
 
-                color_array = []
-                for i in range(int(len(line) / 4)):
-                    i = i * 4
-                    # little-endian so reverse
-                    color_array.append((line[i + 2], line[i + 1], line[i]))
+    def __write_to_master(self, string):
+        if string[-1] != '\n':
+            logger.error(
+                "serial string is expected to end with a \\n character")
+            return
+        self.__serial_writer.write(string.encode())
+        self.__serial_writer.flush()
 
-                self.virtualpixelwindow.update_with_colors(color_array)
-                lightful_windows.tick()
-                self.__write_to_master("\n")  # got your message!
+    def tick(self):
+        """Virtual Arduino 'tick' polling for and updating for serial input."""
 
-            time.sleep(0.001)
+        line = self.__serial_reader.read(self.__num_pixels * 4)
+        if line:
+            """we should simulate the delay of the Arduino actually setting
+            the neopixels. According to docs: 'One pixel requires 24 bits
+            (8 bits each for red, green blue) — 30 microseconds.'
+            https://learn.adafruit.com/adafruit-neopixel-uberguide/advanced-coding"""  # noqa
+            time.sleep(0.000030 * self.__num_pixels)
+
+            color_array = []
+            for i in range(int(len(line) / 4)):
+                i = i * 4
+                # little-endian so reverse
+                color_array.append((line[i + 2], line[i + 1], line[i]))
+
+            self.virtualpixelwindow.update_with_colors(color_array)
+            self.__write_to_master("\n")  # got your message!
+
+        time.sleep(0.001)
