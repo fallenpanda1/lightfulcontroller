@@ -1,3 +1,5 @@
+from AppKit import NSSound
+from Foundation import NSURL
 import logging
 import sys
 
@@ -20,6 +22,11 @@ class MetronomeTask(Task):
         self.ticks_per_beat = 50
         self.first_tick = 0
         self.last_tick = 0
+
+        # whoa, ObjC!
+        self.sound = NSSound.alloc().initWithContentsOfFile_byReference_(
+            "media/audio/metronome.wav", False
+        )
 
     def start(self):
         self.first_tick = 0
@@ -52,8 +59,8 @@ class MetronomeTask(Task):
         return self.beats_per_measure * self.ticks_per_beat
 
     def _play_beat(self):
-        sys.stdout.write('\a')
-        sys.stdout.flush()
+        self.sound.stop()
+        self.sound.play()
 
     @property
     def last_time(self):
