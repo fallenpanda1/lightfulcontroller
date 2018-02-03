@@ -73,7 +73,7 @@ class PlayMidiTask(Task):
 
         current_tick = convert_to_ticks(time, self.tempo, self.ticks_per_beat)
         if current_tick > self.__last_tick + 1:
-            logger.info("tick jump: " + str(current_tick - self.__last_tick))
+            logger.error("tick jump: " + str(current_tick - self.__last_tick))
 
         if current_tick == self.__last_tick:
             # don't handle same tick twice (this violates requirement that

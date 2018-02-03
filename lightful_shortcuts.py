@@ -106,7 +106,7 @@ class LightfulKeyboardShortcuts:
         self.midi_monitor.send_midi_message(rtmidi.MidiMessage().noteOff(0, 0))
 
     def add_metronome(self):
-        self.metronome_task = MetronomeTask(500000, 4)
+        self.metronome_task = MetronomeTask(500000, 8)
         self.midi_scheduler.add(self.metronome_task)
 
     def edit_midi_file(self):
