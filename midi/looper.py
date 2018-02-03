@@ -1,9 +1,9 @@
 import logging
 from time import time
 
-from lightful_tasks import RepeatingTask
 from midi.conversions import convert_to_seconds
 from midi.conversions import convert_to_ticks
+from midi.metronome import MetronomeSyncedTask
 from midi.metronome import MetronomeTask
 from midi.player import PlayMidiTask
 from midi.recorder import MidiRecorder
@@ -93,12 +93,12 @@ class MidiLooper:
 
     def play(self):
         """ Play last saved recording """
-        self.__play_task = RepeatingTask(
+        self.__play_task = MetronomeSyncedTask(
+            self.metronome,
             PlayMidiTask(
                 self.__recorder.recorded_notes,
                 self.__midi_monitor
-            ),
-            duration=self.seconds_per_measure()
+            )
         )
         self.__midi_scheduler.add(self.__play_task)
 

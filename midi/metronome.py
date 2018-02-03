@@ -1,6 +1,7 @@
 import logging
 import sys
 
+from midi.conversions import convert_to_seconds
 from midi.conversions import convert_to_ticks
 from scheduler.scheduler import Task
 
@@ -17,10 +18,12 @@ class MetronomeTask(Task):
         self.tempo = tempo
         self.beats_per_measure = beats_per_measure
         self.ticks_per_beat = 50
-        self.__last_tick = 0
+        self.first_tick = 0
+        self.last_tick = 0
 
     def start(self):
-        self.__last_tick = 0
+        self.first_tick = 0
+        self.last_tick = 0
 
     def tick(self, time):
         if self.is_finished(time):
@@ -28,21 +31,34 @@ class MetronomeTask(Task):
             return
 
         current_tick = convert_to_ticks(time, self.tempo, self.ticks_per_beat)
-        if current_tick > self.__last_tick + 1:
-            logger.error("tick jump: " + str(current_tick - self.__last_tick))
 
-        if current_tick == self.__last_tick:
+        # mod current tick by beats in a measure
+        current_tick = current_tick % self.__ticks_per_measure()
+
+        if current_tick > self.last_tick + 1:
+            logger.error("tick jump: " + str(current_tick - self.last_tick))
+
+        if current_tick == self.last_tick:
             # don't handle same tick twice (this violates requirement that
             # tasks be deterministic, but it's not a huge deal in this case)
             return
+        self.last_tick = current_tick
 
-        if current_tick + self.ticks_per_beat >= self.__last_tick:
-            self.__last_tick = current_tick
+        if current_tick % self.ticks_per_beat == 0:
+            logger.info("playing")
             self._play_beat()
+
+    def __ticks_per_measure(self):
+        return self.beats_per_measure * self.ticks_per_beat
 
     def _play_beat(self):
         sys.stdout.write('\a')
         sys.stdout.flush()
+
+    @property
+    def last_time(self):
+        return convert_to_seconds(self.last_tick, self.tempo,
+                                  self.ticks_per_beat)
 
     def is_finished(self, time):
         return False  # never finished for now
@@ -50,3 +66,25 @@ class MetronomeTask(Task):
     def progress(self, time):
         # TODO: implement me
         return 0
+
+
+class MetronomeSyncedTask(Task):
+    """Sync a task with a metronome"""
+
+    def __init__(self, metronome, task):
+        """
+        Args:
+            metronome: an already ticking metronome
+            task: task to sync up with the metronome
+        """
+        self.metronome = metronome
+        self.task = task
+
+    def start(self):
+        self.task.start()
+
+    def tick(self, time):
+        self.task.tick(self.metronome.last_time)
+
+    def is_finished(self, time):
+        return False
