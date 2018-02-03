@@ -30,7 +30,7 @@ class PlayMidiTask(Task):
         # TODO: pass this in instead of hardcoding
         self.ticks_per_beat = 50
 
-        self.__mido_events_by_tick = self.events_by_tick(mido_events)
+        self.__mido_events_by_tick = self.__events_by_tick(mido_events)
         self.__last_tick = -1
 
 
@@ -42,7 +42,7 @@ class PlayMidiTask(Task):
             logger.error("unexpected: first message isn't a tempo message?!")
         return tempo_message.tempo
 
-    def events_by_tick(self, mido_events):
+    def __events_by_tick(self, mido_events):
         """Given a list of mido events, keys them by MIDI tick number (relative
         to first event)"""
         cumulative_time = 0
