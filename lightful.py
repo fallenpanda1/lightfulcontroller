@@ -78,6 +78,7 @@ def main_loop(window):
         logger.info("using simulated arduino/neopixels handled on separate process")
         render_queue = Queue()
         render_process = Process(target=render_process_loop, args=(render_queue, num_pixels))
+        render_process.daemon = True
         render_process.start()
         # render loop expected to give us the port on which its listening for
         # arduino serial messages
