@@ -1,7 +1,5 @@
 from AppKit import NSSound
-from Foundation import NSURL
 import logging
-import sys
 
 from midi.conversions import convert_to_seconds
 from midi.conversions import convert_to_ticks
