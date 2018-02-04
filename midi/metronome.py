@@ -16,10 +16,10 @@ class MetronomeTask(Task):
     to keep in sync with a common beat.
     """
 
-    def __init__(self, tempo, beats_per_measure):
+    def __init__(self, tempo, ticks_per_beat, beats_per_measure):
         self.tempo = tempo
+        self.ticks_per_beat = ticks_per_beat
         self.beats_per_measure = beats_per_measure
-        self.ticks_per_beat = 50
         self.first_tick = 0
         self.last_tick = 0
 

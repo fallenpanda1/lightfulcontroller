@@ -24,6 +24,7 @@ class MidiLooper:
         # will share the same one
         self.metronome = MetronomeTask(
             tempo=self.tempo,
+            ticks_per_beat=self.ticks_per_beat,
             beats_per_measure=self.beats_per_measure
         )
         self.__midi_monitor = midi_monitor
