@@ -3,23 +3,27 @@ import logging
 
 from midi.conversions import convert_to_seconds
 from midi.conversions import convert_to_ticks
+from midi.time_keeper import TimeKeeper
 from scheduler.scheduler import Task
 
 logger = logging.getLogger("global")
 
 
-class MetronomeTask(Task):
+class MetronomeTask(Task, TimeKeeper):
     """Metronome that plays audio beats based on tempo and time
     signature. Also serves as a time-keeper for other systems that want
     to keep in sync with a common beat.
     """
+
+    current_tick = 0  # TimeKeeper abstract property
+    tempo = 0  # TimeKeeper abstract property
 
     def __init__(self, tempo, ticks_per_beat, beats_per_measure):
         self.tempo = tempo
         self.ticks_per_beat = ticks_per_beat
         self.beats_per_measure = beats_per_measure
         self.first_tick = 0
-        self.last_tick = 0
+        self.current_tick = 0
 
         # whoa, ObjC!
         self.sound = NSSound.alloc().initWithContentsOfFile_byReference_(
@@ -28,7 +32,7 @@ class MetronomeTask(Task):
 
     def start(self):
         self.first_tick = 0
-        self.last_tick = 0
+        self.current_tick = 0
 
     def tick(self, time):
         if self.is_finished(time):
@@ -40,14 +44,14 @@ class MetronomeTask(Task):
         # mod current tick by beats in a measure
         current_tick = current_tick % self.__ticks_per_measure()
 
-        if current_tick > self.last_tick + 1:
-            logger.error("tick jump: " + str(current_tick - self.last_tick))
+        if current_tick > self.current_tick + 1:
+            logger.error("tick jump: " + str(current_tick - self.current_tick))
 
-        if current_tick == self.last_tick:
+        if current_tick == self.current_tick:
             # don't handle same tick twice (this violates requirement that
             # tasks be deterministic, but it's not a huge deal in this case)
             return
-        self.last_tick = current_tick
+        self.current_tick = current_tick
 
         if current_tick % self.ticks_per_beat == 0:
             logger.info("playing")
@@ -61,8 +65,8 @@ class MetronomeTask(Task):
         self.sound.play()
 
     @property
-    def last_time(self):
-        return convert_to_seconds(self.last_tick, self.tempo,
+    def current_time(self):
+        return convert_to_seconds(self.current_tick, self.tempo,
                                   self.ticks_per_beat)
 
     def is_finished(self, time):
@@ -89,7 +93,7 @@ class MetronomeSyncedTask(Task):
         self.task.start()
 
     def tick(self, time):
-        self.task.tick(self.metronome.last_time)
+        self.task.tick(self.metronome.current_time)
 
     def is_finished(self, time):
         return False
