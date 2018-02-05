@@ -5,9 +5,6 @@ import multiprocessing
 import time
 from multiprocessing import Process
 from multiprocessing import Queue
-import serial
-
-from pymaybe import maybe
 
 from curses_log_handler import CursesLogHandler
 from keyboard_monitor import KeyboardMonitor
