@@ -96,9 +96,10 @@ class MidiLooper:
         """ Play last saved recording """
         self.__play_task = MetronomeSyncedTask(
             self.metronome,
-            PlayMidiTask(
+            PlayMidiTask.with_mido_events(
                 self.__recorder.recorded_notes,
-                self.__midi_monitor
+                self.__midi_monitor,
+                self.ticks_per_beat
             )
         )
         self.__midi_scheduler.add(self.__play_task)

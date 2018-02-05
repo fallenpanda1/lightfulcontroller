@@ -81,7 +81,8 @@ class LightfulKeyboardShortcuts:
     def play_recorded_midi_file(self):
         """ play recorded midi file """
         self.play_midi_task = PlayMidiTask.withfile("recording1.mid",
-                                                    self.midi_monitor)
+                                                    midi_monitor=self.midi_monitor,
+                                                    ticks_per_beat=50)
         # reset lights show so that we always start any lights show
         # state, e.g. animations, at t=0 when recording starts
         self.lights_show.reset_lights()
