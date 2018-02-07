@@ -6,9 +6,47 @@ from midi.conversions import convert_to_ticks
 from midi.metronome import MetronomeSyncedTask
 from midi.metronome import MetronomeTask
 from midi.player import PlayMidiTask
-from midi.recorder import MidiRecorder
 
 logger = logging.getLogger("global")
+
+
+class MidiLoopRecorder:
+
+    def __init__(self, metronome, midi_monitor):
+        self.__metronome = metronome
+        self.__midi_monitor = midi_monitor
+        self.notes_by_tick = {}
+        self.__is_recording = False
+
+    def start(self):
+        """Begin recording"""
+        self.__midi_monitor.register(self)
+        self.__is_recording = True
+
+    def stop(self):
+        """Stop recording"""
+        self.__midi_monitor.unregister(self)
+        self.__is_recording = False
+
+    def is_recording(self):
+        return self.__is_recording
+
+    def received_midi(self, rtmidi_message):
+        current_tick = self.__metronome.current_tick
+
+        # make sure we don't handle rtmidi_messages that we recorded ourselves
+        # and are just being played back at us
+        # TODO: this is hacky...use channels to handle this
+        if current_tick in self.notes_by_tick and \
+                rtmidi_message in self.notes_by_tick[current_tick]:
+            return
+
+        m = rtmidi_message
+        if m.isNoteOn() or m.isNoteOff() or \
+                (m.isController() and m.getControllerNumber() == 64):
+            notes = self.notes_by_tick.get(current_tick, [])
+            notes.append(m)
+            self.notes_by_tick[current_tick] = notes
 
 
 class MidiLooper:
@@ -48,11 +86,9 @@ class MidiLooper:
         """ Start recording
         start_time: global start time
         """
-        self.__recorder = MidiRecorder(
-            file_name='',
-            midi_monitor=self.__midi_monitor,
-            tempo=self.tempo,
-            ticks_per_beat=self.ticks_per_beat
+        self.__recorder = MidiLoopRecorder(
+            metronome=self.metronome,
+            midi_monitor=self.__midi_monitor
         )
         self.__midi_scheduler.add(self.metronome)
         self.__recorder.start()
@@ -68,37 +104,21 @@ class MidiLooper:
 
     def cancel_record(self):
         """ Cancel active recording """
-        self.__recorder.stop(save_to_file=False)
+        self.__recorder.stop()
         pass
 
     def save_record(self):
         """ Save active recording """
-        self.__recorder.stop(save_to_file=False)
-        recording = self.__recorder.recorded_notes
-        # get the last measure of notes only, then set the first note's
-        # delta to the delta from measure start
-
-        logger.info("save record before: " + str(recording))
-
-        # add extra delta ticks to first note
-        if len(recording) > 0:
-            recording[0].time += self.delta_ticks
-
-        logger.info("save record after: " + str(recording))
-
-    def snap_to_measures(self, mido_messages):
-        """ Snap each message into measures, based on global start time
-        and beats per measure and ticks per beat and tempo """
-
-        pass
+        self.__recorder.stop()
 
     def play(self):
         """ Play last saved recording """
         self.__play_task = MetronomeSyncedTask(
             self.metronome,
-            PlayMidiTask.with_mido_events(
-                self.__recorder.recorded_notes,
+            PlayMidiTask(
+                self.__recorder.notes_by_tick,
                 self.__midi_monitor,
+                self.tempo,
                 self.ticks_per_beat
             )
         )
