@@ -91,16 +91,16 @@ class LightfulKeyboardShortcuts:
     def toggle_loop(self):
         if not self.midi_looper:
             self.midi_looper = MidiLooper(
-                tempo=500000,
+                tempo=410000,
                 ticks_per_beat=50,
-                beats_per_measure=8,
+                beats_per_measure=16,
                 midi_monitor=self.midi_monitor,
                 midi_scheduler=self.midi_scheduler
             )
             self.midi_looper.record(time.time())
+            self.midi_looper.play()
         else:
             self.midi_looper.save_record()
-            self.midi_looper.play()
 
 
     def send_special_keyboard_event(self):
