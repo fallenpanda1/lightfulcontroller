@@ -97,9 +97,8 @@ class PlayMidiTask(Task):
         messages_to_send = self.__rtmidi_events_by_tick[current_tick]
 
         for rtmidi_message in messages_to_send:
-            if not rtmidi_message.isController():
-                if rtmidi_message is not None and not self.is_muted:
-                    self.__midi_out.send_midi_message(rtmidi_message)
+            if rtmidi_message is not None and not self.is_muted:
+                self.__midi_out.send_midi_message(rtmidi_message)
 
     def is_finished(self, time):
         # TODO: need to get last event to figure out when to finish
