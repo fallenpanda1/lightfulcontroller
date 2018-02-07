@@ -56,6 +56,22 @@ class MidiMonitor:
         self.handle_midi_message(rtmidi_message)
 
     def handle_midi_message(self, rtmidi_message):
+
+        # don't bother handling sustain pedal value changes unless its
+        # state changed between on and off
+        is_redundant = False
+
+        rtmidi_message = rtmidi_message # set var in function scope
+        if rtmidi_message.isController() and \
+                rtmidi_message.getControllerNumber() == 64:
+            sustain_value = rtmidi_message.getControllerValue()
+            SUSTAIN_ON_THRESHOLD = 64
+            is_active = (sustain_value > SUSTAIN_ON_THRESHOLD)
+            is_redundant = \
+                (is_active == self.__is_sustain_pedal_active)
+            self.__is_sustain_pedal_active = is_active
+            rtmidi_message = rtmidi.MidiMessage.controllerEvent(0, 64, 127 if is_active else 0)
+
         for observer in self.__observers:
             observer.received_midi(rtmidi_message)
 
