@@ -42,8 +42,10 @@ def main_loop(window):
     logger.setLevel(logging.DEBUG)
     handler = CursesLogHandler(curses_window)
     # todo, add function name here?
-    formatter = logging.Formatter('%(asctime)s-%(name)s-'
-                                  '%(levelname)s-%(message)s')
+    formatter = logging.Formatter(
+        '%(asctime)s,%(msecs)03d-%(levelname)s-%(message)s',
+        '%H:%M:%S'
+    )
     handler.setFormatter(formatter)
     logger.handlers = [handler]
 
