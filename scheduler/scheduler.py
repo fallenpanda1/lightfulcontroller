@@ -1,6 +1,8 @@
 import logging
 import time
-from abc import ABC, abstractmethod
+
+from abc import abstractmethod
+from abc import ABC
 
 logger = logging.getLogger("global")
 
