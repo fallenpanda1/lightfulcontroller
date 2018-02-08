@@ -113,7 +113,7 @@ class Scheduler:
         for index, task_wrapper in enumerate(self.task_wrappers):
             if task == task_wrapper.task:
                 # only safe to remove in loop because we're returning after
-                del self.task_wrapper[index]
+                del self.task_wrappers[index]
                 return
 
     def clear(self):
