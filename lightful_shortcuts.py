@@ -34,24 +34,73 @@ class LightfulKeyboardShortcuts:
 
     def register_shortcuts(self):
         k = self.keyboard_monitor
-        k.add_keydown_callback('o', "(o)pen serial connection",
+        k.register_callback('o', "(o)pen serial connection",
                                self.pixel_adapter.start)
-        k.add_keydown_callback('c', "(c)lose serial connection",
+        k.register_callback('c', "(c)lose serial connection",
                                self.pixel_adapter.stop)
-        k.add_keydown_callback('r', "(r)ecord MIDI input to a save file, or "
+        k.register_callback('r', "(r)ecord MIDI input to a save file, or "
                                "if a file is recording, then save recording",
                                self.toggle_record_midi_file)
-        k.add_keydown_callback('p', "(p)lay saved MIDI recording",
+        k.register_callback('p', "(p)lay saved MIDI recording",
                                self.play_recorded_midi_file)
-        k.add_keydown_callback('l', "(l)oop - begin midi looper, or "
-                               "if already recording, then loop the recording",
-                               self.toggle_loop)
-        k.add_keydown_callback('b', "(b)eep (local speakers)",
-                               self.add_metronome)
-        k.add_keydown_callback('e', "(e)dit MIDI file", self.edit_midi_file)
-        k.add_keydown_callback('q', "(q)uit", self.exit_app)
-        k.add_keydown_callback('n', "(n)ote on/off event",
+        
+        loop_keyboard_monitor = k.register_nested_monitor(
+            'l', "(l)oop mode - loop mode!"
+        )
+        l = loop_keyboard_monitor
+        l.register_callback('s', "(s)tart loop mode", self.begin_loop_mode)
+        l.register_callback('n', "(n)ote on/off event",
                                self.send_note_on_off_event)
+        l.register_callback('1', "(1) record/play/pause channel 1", self.toggle_channel_1)
+        l.register_callback('2', "(2) record/play/pause channel 2", self.toggle_channel_2)
+        l.register_callback('3', "(3) record/play/pause channel 3", self.toggle_channel_3)
+        l.register_callback('4', "(4) record/play/pause channel 4", self.toggle_channel_4)
+        l.register_callback('q', "(q)uit (back to previous menu)", self.quit_loop_mode)
+        
+        k.register_callback('b', "(b)eep (local speakers)",
+                               self.add_metronome)
+        k.register_callback('e', "(e)dit MIDI file", self.edit_midi_file)
+        k.register_callback('q', "(q)uit", self.exit_app)
+ 
+    def begin_loop_mode(self):
+        if self.midi_looper is not None:
+            return
+        self.midi_looper = MidiLooper(
+            tempo=410000,
+            ticks_per_beat=50,
+            beats_per_measure=16,
+            midi_monitor=self.midi_monitor,
+            midi_scheduler=self.midi_scheduler
+        )
+        self.midi_looper.start()
+
+    def quit_loop_mode(self):
+        self.end_loop_mode()
+        self.keyboard_monitor.remove_nested_monitor()
+
+    def end_loop_mode(self):
+        self.midi_looper.stop()
+        self.midi_looper = None
+
+    def toggle_channel_1(self):
+        self.toggle_loop(1)
+
+    def toggle_channel_2(self):
+        self.toggle_loop(2)
+
+    def toggle_channel_3(self):
+        self.toggle_loop(3)
+
+    def toggle_channel_4(self):
+        self.toggle_loop(4)
+
+    def toggle_loop(self, channel):
+        looper = self.midi_looper
+        if looper.current_channel == channel and looper.is_recording():
+            looper.save_record()
+        else:
+            looper.record(time.time(), channel)
+            looper.play(channel)
 
     def shortcuts_description(self):
         descriptions = self.keyboard_monitor.descriptions_by_key.values()
@@ -87,21 +136,6 @@ class LightfulKeyboardShortcuts:
         # state, e.g. animations, at t=0 when recording starts
         self.lights_show.reset_lights()
         self.midi_scheduler.add(self.play_midi_task)
-
-    def toggle_loop(self):
-        if not self.midi_looper:
-            self.midi_looper = MidiLooper(
-                tempo=410000,
-                ticks_per_beat=50,
-                beats_per_measure=16,
-                midi_monitor=self.midi_monitor,
-                midi_scheduler=self.midi_scheduler
-            )
-            self.midi_looper.record(time.time())
-            self.midi_looper.play()
-        else:
-            self.midi_looper.save_record()
-
 
     def send_special_keyboard_event(self):
         self.midi_monitor.send_midi_message(rtmidi.MidiMessage().noteOff(0, 0))

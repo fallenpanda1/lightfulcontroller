@@ -67,8 +67,10 @@ class MidiLooper:
         )
         self.__midi_monitor = midi_monitor
         self.__midi_scheduler = midi_scheduler
+        self.__play_tasks = {}
+        self.current_channel = -1
 
-        self.is_playing = False
+        self.is_started = False
 
     def ticks_per_measure(self):
         """returns number of ticks in a measure"""
@@ -82,22 +84,26 @@ class MidiLooper:
             ticks_per_beat=self.ticks_per_beat
         )
 
-    def record(self, start_time):
+    def start(self):
+        if self.is_started is True:
+            return
+        self.is_started = True
+        self.__midi_scheduler.add(self.metronome)
+
+    def record(self, start_time, channel):
         """ Start recording
         start_time: global start time
         """
+        self.current_channel = channel
         self.__recorder = MidiLoopRecorder(
             metronome=self.metronome,
             midi_monitor=self.__midi_monitor
         )
-        self.__midi_scheduler.add(self.metronome)
         self.__recorder.start()
 
         delta_time = time() - start_time
         self.delta_ticks = convert_to_ticks(delta_time, self.tempo,
                                             self.ticks_per_beat)
-        logger.info("recording " + str(delta_time) + " seconds after start")
-        logger.info("recording " + str(self.delta_ticks) + " ticks after start")
 
     def is_recording(self):
         return self.__recorder.is_recording()
@@ -111,9 +117,9 @@ class MidiLooper:
         """ Save active recording """
         self.__recorder.stop()
 
-    def play(self):
+    def play(self, channel):
         """ Play last saved recording """
-        self.__play_task = MetronomeSyncedTask(
+        self.__play_tasks[channel] = MetronomeSyncedTask(
             self.metronome,
             PlayMidiTask(
                 self.__recorder.notes_by_tick,
@@ -122,10 +128,13 @@ class MidiLooper:
                 self.ticks_per_beat
             )
         )
-        self.__midi_scheduler.add(self.__play_task)
+        self.__midi_scheduler.add(self.__play_tasks[channel])
 
-    def pause(self):
-        self.__play_task.pause()
+    def pause(self, channel):
+        self.__play_tasks[channel].pause()
 
     def stop(self):
-        self.__midi_scheduler.remove(self.__play_task)
+        logger.info("stopping!")
+        for task in self.__play_tasks:
+            self.__midi_scheduler.remove(task) 
+        self.__midi_scheduler.remove(self.metronome)
