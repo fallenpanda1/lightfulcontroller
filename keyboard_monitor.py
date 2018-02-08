@@ -3,6 +3,7 @@ import logging
 from pymaybe import maybe
 
 logger = logging.getLogger("global")
+prefixless_logger = logging.getLogger("prefixless")
 
 
 class KeyboardMonitor:
@@ -19,6 +20,11 @@ class KeyboardMonitor:
             return
         self.callbacks_by_key[ord(key)] = callback
         self.descriptions_by_key[ord(key)] = description
+
+    def description(self):
+        """Outputs all shortcuts registered"""
+        descriptions = self.descriptions_by_key.values()
+        return '\n'.join(descriptions)
 
     def notify_key_press(self, character):
         callback = self.callbacks_by_key.get(character)

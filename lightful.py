@@ -16,6 +16,7 @@ from scheduler.scheduler import Scheduler
 from shows import hanging_door_lights_show
 
 logger = logging.getLogger("global")
+prefixless_logger = logging.getLogger("prefixless")
 
 # set up curses for async keyboard input
 stdscr = curses.initscr()
@@ -34,10 +35,6 @@ def main_loop(window):
     curses_window = window
     curses_window.scrollok(1)
 
-    curses_window.addstr("~^~^~Welcome to the Lightful Controller~^~^~\n")
-    curses_window.addstr("Setting up program...\n")
-    curses_window.refresh()
-
     # set up logging
     logger.setLevel(logging.DEBUG)
     handler = CursesLogHandler(curses_window)
@@ -48,6 +45,13 @@ def main_loop(window):
     )
     handler.setFormatter(formatter)
     logger.handlers = [handler]
+
+    prefixless_handler = CursesLogHandler(curses_window)
+    prefixless_logger.setLevel(logging.INFO)
+    prefixless_logger.handlers = [prefixless_handler]
+
+    prefixless_logger.info("~^~^~Welcome to the Lightful Controller~^~^~\n")
+    prefixless_logger.info("Setting up program...\n")
 
     # parse command line options
     parser = argparse.ArgumentParser(
@@ -102,10 +106,9 @@ def main_loop(window):
     )
     keyboard_shortcuts.register_shortcuts()
 
-    curses_window.addstr("\nDone setting up\n\n")
-    curses_window.addstr("Keyboard Shortcuts:\n")
-    curses_window.addstr(keyboard_shortcuts.shortcuts_description() + "\n")
-    curses_window.refresh()
+    prefixless_logger.info("Done setting up")
+    prefixless_logger.info("\nKeyboard Shortcuts:")
+    prefixless_logger.info(keyboard_shortcuts.shortcuts_description())
 
     profiler = Profiler()
     # set to True to enable time profile logs of main run loop
