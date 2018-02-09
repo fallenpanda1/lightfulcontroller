@@ -49,12 +49,16 @@ class LightfulKeyboardShortcuts:
         )
         l = loop_keyboard_monitor
         l.register_callback('s', "(s)tart loop mode", self.begin_loop_mode)
-        l.register_callback('n', "(n)ote on/off event",
-                               self.send_note_on_off_event)
-        l.register_callback('1', "(1) record/play/pause channel 1", self.toggle_channel_1)
+        l.register_callback('b', "(b) note on/off event 1",
+                               self.send_note_on_off_event1)
+        l.register_callback('n', "(n)ote on/off event 2",
+                               self.send_note_on_off_event2)
+        l.register_callback('m', "(m) note on/off event 3",
+                               self.send_note_on_off_event3)
         l.register_callback('2', "(2) record/play/pause channel 2", self.toggle_channel_2)
         l.register_callback('3', "(3) record/play/pause channel 3", self.toggle_channel_3)
         l.register_callback('4', "(4) record/play/pause channel 4", self.toggle_channel_4)
+        l.register_callback('5', "(5) record/play/pause channel 5", self.toggle_channel_5)
         l.register_callback('q', "(q)uit (back to previous menu)", self.quit_loop_mode)
         
         k.register_callback('b', "(b)eep (local speakers)",
@@ -82,9 +86,6 @@ class LightfulKeyboardShortcuts:
         self.midi_looper.stop()
         self.midi_looper = None
 
-    def toggle_channel_1(self):
-        self.toggle_loop(1)
-
     def toggle_channel_2(self):
         self.toggle_loop(2)
 
@@ -93,6 +94,9 @@ class LightfulKeyboardShortcuts:
 
     def toggle_channel_4(self):
         self.toggle_loop(4)
+
+    def toggle_channel_5(self):
+        self.toggle_loop(5)
 
     def toggle_loop(self, channel):
         looper = self.midi_looper
@@ -156,16 +160,26 @@ class LightfulKeyboardShortcuts:
         editor.save()
         logger.info("write successful!")
 
-    def send_note_on_off_event(self):
+    def send_note_on_off_event1(self):
+        self.send_note_on_off_event(58)
+
+    def send_note_on_off_event2(self):
+        self.send_note_on_off_event(60)
+
+    def send_note_on_off_event3(self):
+        self.send_note_on_off_event(62)
+
+
+    def send_note_on_off_event(self, pitch):
         """Note on event, then after a delay, note off event"""
-        self.send_note_on_event()
+        self.send_note_on_event(pitch)
 
-        Timer(0.2, self.send_note_off_event, ()).start()
+        Timer(0.2, self.send_note_off_event, [pitch]).start()
 
-    def send_note_on_event(self):
-        note_on = rtmidi.MidiMessage().noteOn(0, 60, 100)
+    def send_note_on_event(self, pitch):
+        note_on = rtmidi.MidiMessage().noteOn(0, pitch, 100)
         self.midi_monitor.send_midi_message(note_on)
 
-    def send_note_off_event(self):
-        note_off = rtmidi.MidiMessage().noteOff(0, 60)
+    def send_note_off_event(self, pitch):
+        note_off = rtmidi.MidiMessage().noteOff(0, pitch)
         self.midi_monitor.send_midi_message(note_off)

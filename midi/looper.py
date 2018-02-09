@@ -12,9 +12,10 @@ logger = logging.getLogger("global")
 
 class MidiLoopRecorder:
 
-    def __init__(self, metronome, midi_monitor):
+    def __init__(self, metronome, midi_monitor, channel):
         self.__metronome = metronome
         self.__midi_monitor = midi_monitor
+        self.channel = channel
         self.notes_by_tick = {}
         self.__is_recording = False
 
@@ -32,19 +33,17 @@ class MidiLoopRecorder:
         return self.__is_recording
 
     def received_midi(self, rtmidi_message):
-        current_tick = self.__metronome.current_tick
-
-        # make sure we don't handle rtmidi_messages that we recorded ourselves
-        # and are just being played back at us
-        # TODO: this is hacky...use channels to handle this
-        if current_tick in self.notes_by_tick and \
-                rtmidi_message in self.notes_by_tick[current_tick]:
+        if rtmidi_message.getChannel() != 1:
+            # assume only channel one has real time user input. TODO: enum this?
             return
+
+        current_tick = self.__metronome.current_tick
 
         m = rtmidi_message
         if m.isNoteOn() or m.isNoteOff() or \
                 (m.isController() and m.getControllerNumber() == 64):
             notes = self.notes_by_tick.get(current_tick, [])
+            m.setChannel(self.channel)
             notes.append(m)
             self.notes_by_tick[current_tick] = notes
 
@@ -97,7 +96,8 @@ class MidiLooper:
         self.current_channel = channel
         self.__recorder = MidiLoopRecorder(
             metronome=self.metronome,
-            midi_monitor=self.__midi_monitor
+            midi_monitor=self.__midi_monitor,
+            channel=channel
         )
         self.__recorder.start()
 
