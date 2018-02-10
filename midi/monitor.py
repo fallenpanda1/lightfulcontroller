@@ -70,7 +70,7 @@ class MidiMonitor:
             is_redundant = \
                 (is_active == self.__is_sustain_pedal_active)
             self.__is_sustain_pedal_active = is_active
-            rtmidi_message = rtmidi.MidiMessage.controllerEvent(0, 64, 127 if is_active else 0)
+            rtmidi_message = rtmidi.MidiMessage.controllerEvent(rtmidi_message.getChannel(), 64, 127 if is_active else 0)
 
         for observer in self.__observers:
             observer.received_midi(rtmidi_message)
