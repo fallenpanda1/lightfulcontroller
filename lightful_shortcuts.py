@@ -100,10 +100,18 @@ class LightfulKeyboardShortcuts:
 
     def toggle_loop(self, channel):
         looper = self.midi_looper
-        if looper.current_channel == channel and looper.is_recording():
-            looper.save_record()
-        else:
+        if not looper.has_been_recorded(channel):
+            logger.info("A")
             looper.record(time.time(), channel)
+            looper.play(channel)
+        elif looper.is_recording(channel):
+            logger.info("B")
+            looper.save_record(channel)
+        elif looper.is_playing(channel):
+            logger.info("C")
+            looper.pause(channel)  # TODO: this is more of a mute than a pause
+        elif not looper.is_playing(channel):
+            logger.info("D")
             looper.play(channel)
 
     def shortcuts_description(self):
