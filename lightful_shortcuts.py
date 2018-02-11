@@ -74,9 +74,9 @@ class LightfulKeyboardShortcuts:
         if self.midi_looper is not None:
             return
         self.midi_looper = MidiLooper(
-            tempo=410000,
+            tempo=550000,
             ticks_per_beat=50,
-            beats_per_measure=16,
+            beats_per_measure=8,
             midi_monitor=self.midi_monitor,
             midi_scheduler=self.midi_scheduler
         )
