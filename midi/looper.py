@@ -1,6 +1,8 @@
 import logging
 from time import time
 
+from pymaybe import maybe
+
 from midi.conversions import convert_to_seconds
 from midi.conversions import convert_to_ticks
 from midi.metronome import MetronomeSyncedTask
@@ -68,6 +70,7 @@ class MidiLooper:
         self.__midi_scheduler = midi_scheduler
         self.__play_tasks = {}
         self.current_channel = -1
+        self.__recorders = {}
 
         self.is_started = False
 
@@ -94,35 +97,34 @@ class MidiLooper:
         start_time: global start time
         """
         self.current_channel = channel
-        self.__recorder = MidiLoopRecorder(
+        recorder = MidiLoopRecorder(
             metronome=self.metronome,
             midi_monitor=self.__midi_monitor,
             channel=channel
         )
-        self.__recorder.start()
+        self.__recorders[channel] = recorder
+        recorder.start()
 
         delta_time = time() - start_time
         self.delta_ticks = convert_to_ticks(delta_time, self.tempo,
                                             self.ticks_per_beat)
 
-    def is_recording(self):
-        return self.__recorder.is_recording()
+    def is_recording(self, channel):
+        return self.__recorders.get(channel).is_recording()
 
-    def cancel_record(self):
-        """ Cancel active recording """
-        self.__recorder.stop()
-        pass
+    def has_been_recorded(self, channel):
+        return self.__recorders.get(channel) is not None
 
-    def save_record(self):
+    def save_record(self, channel):
         """ Save active recording """
-        self.__recorder.stop()
+        maybe(self.__recorders.get(channel)).stop()
 
     def play(self, channel):
         """ Play last saved recording """
         self.__play_tasks[channel] = MetronomeSyncedTask(
             self.metronome,
             PlayMidiTask(
-                self.__recorder.notes_by_tick,
+                self.__recorders.get(channel).notes_by_tick,
                 self.__midi_monitor,
                 self.tempo,
                 self.ticks_per_beat
@@ -130,8 +132,14 @@ class MidiLooper:
         )
         self.__midi_scheduler.add(self.__play_tasks[channel])
 
+    def is_playing(self, channel):
+        playing =  self.__play_tasks.get(channel) is not None
+        logger.info("is playing? " + str(playing))
+        return playing
+
     def pause(self, channel):
-        self.__play_tasks[channel].pause()
+        self.__midi_scheduler.remove(self.__play_tasks[channel])
+        self.__play_tasks[channel] = None
 
     def stop(self):
         logger.info("stopping!")
