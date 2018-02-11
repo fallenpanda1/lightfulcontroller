@@ -13,7 +13,8 @@ from lightful_shortcuts import LightfulKeyboardShortcuts
 from midi.monitor import MidiMonitor
 from profiler import Profiler
 from scheduler.scheduler import Scheduler
-from shows import hanging_door_lights_show
+from shows.hanging_door_lights_show import HangingDoorLightsShow
+from shows.something_just_like_this_show import SomethingJustLikeThisShow
 
 logger = logging.getLogger("global")
 prefixless_logger = logging.getLogger("prefixless")
@@ -95,8 +96,11 @@ def main_loop(window):
 
     # create show
     global lights_show
-    lights_show = hanging_door_lights_show.HangingDoorLightsShow(
-        animation_scheduler, pixel_adapter, midi_monitor)
+    # lights_show = hanging_door_lights_show.HangingDoorLightsShow(
+    #     animation_scheduler, pixel_adapter, midi_monitor)
+    lights_show = SomethingJustLikeThisShow(
+        animation_scheduler, pixel_adapter, midi_monitor
+    )
 
     # create keyboard monitor
     keyboard_monitor = KeyboardMonitor()
