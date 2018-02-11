@@ -59,6 +59,10 @@ class LightfulKeyboardShortcuts:
         l.register_callback('3', "(3) record/play/pause channel 3", self.toggle_channel_3)
         l.register_callback('4', "(4) record/play/pause channel 4", self.toggle_channel_4)
         l.register_callback('5', "(5) record/play/pause channel 5", self.toggle_channel_5)
+        l.register_callback('6', "(6) record/play/pause channel 6",
+                            self.toggle_channel_6)
+        l.register_callback('7', "(7) record/play/pause channel 7",
+                            self.toggle_channel_7)
         l.register_callback('q', "(q)uit (back to previous menu)", self.quit_loop_mode)
         
         k.register_callback('b', "(b)eep (local speakers)",
@@ -97,6 +101,12 @@ class LightfulKeyboardShortcuts:
 
     def toggle_channel_5(self):
         self.toggle_loop(5)
+
+    def toggle_channel_6(self):
+        self.toggle_loop(6)
+
+    def toggle_channel_7(self):
+        self.toggle_loop(7)
 
     def toggle_loop(self, channel):
         looper = self.midi_looper
