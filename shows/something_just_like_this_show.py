@@ -35,45 +35,63 @@ class SomethingJustLikeThisShow:
         self.row3 = LightSection(range(60, 80))
         self.row4 = LightSection(reversed(range(80, 100)))
 
-        self.row1and4 = self.row1.merged_with(self.row4)
-        self.all = LightSection.merge_all(
-            [self.row1, self.row2, self.row3, self.row4])
-
         # mapping between note and light animations
         self.note_map = {}
 
-        # base map
+        # channel 1 map
+        channel = 1
+        pitches_to_lights = space_notes_out_into_section(
+            pitches=range(36, 70),
+            lightsection=self.row1
+        )
+        for pitch, light_position in pitches_to_lights.items():
+            self.note_map[(pitch, channel)] = self.lightfactory.note_off_task(
+                effect=SolidColor(color=YELLOW),
+                section=LightSection([light_position]),
+                duration=0.6,
+                pitch=pitch
+            )
+
+        # channel 2 map
+        channel = 2
+        pitches_to_lights = space_notes_out_into_section(
+            pitches=range(36, 70),
+            lightsection=self.row2
+        )
+        for pitch, light_position in pitches_to_lights.items():
+            self.note_map[(pitch, channel)] = self.lightfactory.note_off_task(
+                effect=SolidColor(color=YELLOW),
+                section=LightSection([light_position]),
+                duration=0.6,
+                pitch=pitch
+            )
+
+        # channel 3 map
+        channel = 3
         pitches_to_lights = space_notes_out_into_section(
             pitches=range(36, 70),
             lightsection=self.row3
         )
         for pitch, light_position in pitches_to_lights.items():
-            self.note_map[pitch] = self.lightfactory.note_off_task(
+            self.note_map[(pitch, channel)] = self.lightfactory.note_off_task(
                 effect=SolidColor(color=YELLOW),
                 section=LightSection([light_position]),
                 duration=0.6,
                 pitch=pitch
             )
 
-        # melody map
+        # channel 4 map
+        channel = 4
         pitches_to_lights = space_notes_out_into_section(
-            pitches=filter_out_non_C_notes(range(70, 97)),
-            lightsection=self.row2
+            pitches=range(36, 70),
+            lightsection=self.row4
         )
         for pitch, light_position in pitches_to_lights.items():
-            self.note_map[pitch] = self.lightfactory.note_off_task(
+            self.note_map[(pitch, channel)] = self.lightfactory.note_off_task(
                 effect=SolidColor(color=YELLOW),
                 section=LightSection([light_position]),
                 duration=0.6,
                 pitch=pitch
-            )
-
-        # low notes
-        for pitch in [29, 31, 33, 34, 36]:
-            self.note_map[pitch] = self.lightfactory.task(
-                effect=Meteor(color=YELLOW),
-                section=self.row1and4.reversed(),
-                duration=1.6
             )
 
         self.initialize_lights()
@@ -131,10 +149,12 @@ class SomethingJustLikeThisShow:
 
     def received_midi(self, rtmidi_message):
         if rtmidi_message.isNoteOn():
+            channel = rtmidi_message.getChannel()
             pitch = rtmidi_message.getNoteNumber()
-            if pitch in self.note_map:
-                task = copy.copy(self.note_map[pitch])
-                self.__scheduler.add(task, unique_tag=pitch)
+            if (pitch, channel) in self.note_map:
+                task = copy.copy(self.note_map[(pitch, channel)])
+                self.__scheduler.add(task, unique_tag=(pitch, channel))
+
 
 def space_notes_out_into_section(pitches, lightsection):
     """ Given a pitch range and a light section, evenly spaces out
