@@ -122,8 +122,6 @@ class LightfulKeyboardShortcuts:
         self.lights_show.clear_lights()
         self.pixel_adapter.stop()
         self.midi_monitor.stop()
-        # TODO: stop the render process!
-        #maybe(self.virtual_client).stop()
         exit()
 
     # TODO: recording/playing seem like they deserve being in a dedicated
