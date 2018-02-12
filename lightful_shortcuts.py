@@ -63,6 +63,9 @@ class LightfulKeyboardShortcuts:
                             self.toggle_channel_6)
         l.register_callback('7', "(7) record/play/pause channel 7",
                             self.toggle_channel_7)
+        l.register_callback('r', "(r)ecord MIDI input to a save file, or "
+                               "if a file is recording, then save recording",
+                               self.toggle_record_midi_file)
         l.register_callback('q', "(q)uit (back to previous menu)", self.quit_loop_mode)
         
         k.register_callback('b', "(b)eep (local speakers)",
