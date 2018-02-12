@@ -177,25 +177,25 @@ class LightfulKeyboardShortcuts:
         logger.info("write successful!")
 
     def send_note_on_off_event1(self):
-        self.send_note_on_off_event(58)
+        self.send_note_on_off_event(pitch=58, channel=1)
 
     def send_note_on_off_event2(self):
-        self.send_note_on_off_event(60)
+        self.send_note_on_off_event(pitch=60, channel=2)
 
     def send_note_on_off_event3(self):
-        self.send_note_on_off_event(62)
+        self.send_note_on_off_event(pitch=62, channel=3)
 
 
-    def send_note_on_off_event(self, pitch):
+    def send_note_on_off_event(self, pitch, channel=1):
         """Note on event, then after a delay, note off event"""
-        self.send_note_on_event(pitch)
+        self.send_note_on_event(pitch, channel)
 
-        Timer(0.2, self.send_note_off_event, [pitch]).start()
+        Timer(0.2, self.send_note_off_event, [pitch, channel]).start()
 
-    def send_note_on_event(self, pitch):
-        note_on = rtmidi.MidiMessage().noteOn(0, pitch, 100)
+    def send_note_on_event(self, pitch, channel):
+        note_on = rtmidi.MidiMessage().noteOn(channel, pitch, 100)
         self.midi_monitor.send_midi_message(note_on)
 
-    def send_note_off_event(self, pitch):
-        note_off = rtmidi.MidiMessage().noteOff(0, pitch)
+    def send_note_off_event(self, pitch, channel):
+        note_off = rtmidi.MidiMessage().noteOff(channel, pitch)
         self.midi_monitor.send_midi_message(note_off)
