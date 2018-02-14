@@ -12,6 +12,42 @@ from midi.player import PlayMidiTask
 logger = logging.getLogger("global")
 
 
+class MidiLoopPlayer:
+    def __init__(self, metronome, midi_monitor, midi_scheduler, channel, notes_by_tick):
+        self.__metronome = metronome
+        self.__midi_monitor = midi_monitor
+        self.__midi_scheduler = midi_scheduler
+        self.notes_by_tick = notes_by_tick
+        self.channel = channel
+        self.__play_task = MetronomeSyncedTask(
+            self.metronome,
+            PlayMidiTask(
+                self.notes_by_tick,
+                self.__midi_monitor,
+                self.tempo,
+                self.ticks_per_beat
+            )
+        )
+        self.__is_playing = False
+
+    def play(self):
+        """Begin playing notes"""
+        if self.__is_playing:
+            return
+        self.__midi_scheduler.add(self.__play_task)
+        self.__is_playing = True
+
+    def mute(self):
+        """Mute notes"""
+        if not self.__is_playing:
+            return
+        self.__midi_scheduler.remove(self.__play_task)
+        self.__is_playing = False
+
+    def stop_all_pending_notes_since_tick(self, tick):
+        pass
+
+
 class MidiLoopRecorder:
 
     def __init__(self, metronome, midi_monitor, channel):
@@ -46,6 +82,12 @@ class MidiLoopRecorder:
                 (m.isController() and m.getControllerNumber() == 64):
             notes = self.notes_by_tick.get(current_tick, [])
             m.setChannel(self.channel)
+
+            if m.isNoteOn():
+                # notes seem slightly scaled down in volume when recorded
+                # make up for that here:
+                m.multiplyVelocity(1.1)
+
             notes.append(m)
             self.notes_by_tick[current_tick] = notes
 
