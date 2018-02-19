@@ -62,8 +62,10 @@ class VirtualNeopixelWindow(window.Window):
                 # add one so don't start at edge of screen
                 ypos = row_increment * (y + 0.25)
 
-                self.particle_sprites.append(sprite.Sprite(
-                    self.particle_image, x=xpos, y=ypos, batch=self.batch))
+                s = sprite.Sprite(
+                    self.particle_image, x=xpos, y=ypos, batch=self.batch)
+                s.scale = 1.5
+                self.particle_sprites.append(s)
 
     def on_draw(self):
         now = time.time()

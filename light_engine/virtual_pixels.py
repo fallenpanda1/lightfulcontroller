@@ -25,7 +25,7 @@ class VirtualArduinoClient:
     def start(self):
         # open virtual window
         self.virtualpixelwindow = lightful_windows.VirtualNeopixelWindow(
-            800, 600)
+            1200, 800)
         self.virtualpixelwindow.start()
 
         ## MICROCONTROLLER STARTUP PROTOCOL
