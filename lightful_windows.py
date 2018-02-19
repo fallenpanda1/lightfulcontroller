@@ -87,4 +87,14 @@ class VirtualNeopixelWindow(window.Window):
         for index, color in enumerate(new_color_array):
             if index >= num_sprites:
                 return
+
+            # blend in a bit of white to better match the base white
+            # of the ping pong balls we're trying to simulate
+            base_white = 60
+            color = (
+                (color[0] + base_white) / 2,
+                (color[1] + base_white) / 2,
+                (color[2] + base_white) / 2,
+            )
+
             self.particle_sprites[index].color = color
