@@ -1,6 +1,7 @@
 import logging
 from time import time
 
+import rtmidi
 from pymaybe import maybe
 
 from midi.conversions import convert_to_seconds
@@ -13,7 +14,9 @@ logger = logging.getLogger("global")
 
 
 class MidiLoopPlayer:
-    def __init__(self, metronome, midi_monitor, midi_scheduler, channel, notes_by_tick):
+    def __init__(self, metronome, midi_monitor, midi_scheduler, channel, notes_by_tick, tempo, ticks_per_beat):
+        # ok why the heck do we need to have every single dependency
+        # that MidiLooper has? too much responsibility!!
         self.__metronome = metronome
         self.__midi_monitor = midi_monitor
         self.__midi_scheduler = midi_scheduler
@@ -24,11 +27,14 @@ class MidiLoopPlayer:
             PlayMidiTask(
                 self.notes_by_tick,
                 self.__midi_monitor,
-                self.tempo,
-                self.ticks_per_beat
+                tempo,
+                ticks_per_beat
             )
         )
         self.__is_playing = False
+
+        # track all active notes
+        self.__active_notes = []
 
     def play(self):
         """Begin playing notes"""
@@ -152,7 +158,9 @@ class MidiLooper:
                                             self.ticks_per_beat)
 
     def is_recording(self, channel):
-        return self.__recorders.get(channel).is_recording()
+        recorder = self.__recorders.get(channel)
+        if recorder is not None:
+            return recorder.is_recording()
 
     def has_been_recorded(self, channel):
         return self.__recorders.get(channel) is not None
@@ -176,12 +184,15 @@ class MidiLooper:
 
     def is_playing(self, channel):
         playing =  self.__play_tasks.get(channel) is not None
-        logger.info("is playing? " + str(playing))
         return playing
 
     def pause(self, channel):
         self.__midi_scheduler.remove(self.__play_tasks[channel])
         self.__play_tasks[channel] = None
+
+        # a little hacky? end all active notes on a specific channel when
+        # looper is paused. is it hacky?
+        self.__midi_monitor.end_all_notes(channel)
 
     def stop(self):
         logger.info("stopping!")
