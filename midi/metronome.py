@@ -42,7 +42,7 @@ class MetronomeTask(Task, TimeKeeper):
         current_tick = convert_to_ticks(time, self.tempo, self.ticks_per_beat)
 
         # mod current tick by beats in a measure
-        current_tick = current_tick % self.__ticks_per_measure()
+        current_tick = current_tick % self.ticks_per_measure()
 
         if current_tick > self.current_tick + 1:
             logger.error("tick jump: " + str(current_tick - self.current_tick))
@@ -57,8 +57,11 @@ class MetronomeTask(Task, TimeKeeper):
             # logger.info("playing")
             self._play_beat()
 
-    def __ticks_per_measure(self):
+    def ticks_per_measure(self):
         return self.beats_per_measure * self.ticks_per_beat
+
+    def seconds_per_measure(self):
+        return convert_to_seconds(self.ticks_per_measure(), self.tempo, self.ticks_per_beat)
 
     def _play_beat(self):
         self.sound.stop()

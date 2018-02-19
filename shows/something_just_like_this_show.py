@@ -2,11 +2,13 @@ import copy
 import logging
 
 from color import make_color
+from light_engine.light_effect import Functional
 from light_engine.light_effect import Gradient
 from light_engine.light_effect import LightEffectTaskFactory
 from light_engine.light_effect import LightSection
 from light_engine.light_effect import Meteor
 from light_engine.light_effect import SolidColor
+from midi.metronome import MetronomeSyncedTask
 
 logger = logging.getLogger("global")
 
@@ -120,6 +122,47 @@ class SomethingJustLikeThisShow:
         self.initialize_lights()
 
         self.looper = None
+
+    @property
+    def looper(self):
+        return self._looper
+
+    @looper.setter
+    def looper(self, looper):
+        self._looper = looper
+        # for convenience sake, assume we have a started looper
+        if looper is not None:
+            if not looper.is_started:
+                logger.error("looper not started!!")
+
+            self.add_looper_metronome_animation()
+
+    def add_looper_metronome_animation(self):
+        # visual time keeping
+        threshold = 0.05
+        def get_color_by_time(progress, gradient):
+            # each metronome 'measure' loop is actually two 4 beat measures,
+            # so we want to loop twice per measure
+            progress = progress * 2 % 1
+
+            delta = abs(progress - gradient)
+            if delta < threshold:
+                return YELLOW.with_alpha(1 - delta / threshold)
+            else:
+                return YELLOW.with_alpha(0)
+
+
+        self.is_note_active = False
+        task = self.lightfactory.task(
+            effect=Functional(func=get_color_by_time),
+            section=self.all.reversed(),
+            duration=self.looper.metronome.seconds_per_measure()
+        )
+        metronome_synced = MetronomeSyncedTask(
+            task=task,
+            metronome=self.looper.metronome
+        )
+        self.__scheduler.add(metronome_synced)
 
     def initialize_lights(self):
         # add base layer for scheduler
