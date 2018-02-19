@@ -145,6 +145,16 @@ class Meteor(LightEffect):
             # return self.color.with_alpha(alpha)
 
 
+class Functional(LightEffect):
+    """Takes an input function get_color and uses that"""
+
+    def __init__(self, func):
+        self.function = func
+
+    def get_color(self, progress, gradient):
+        return self.function(progress, gradient)
+
+
 class LightEffectTaskFactory:
     """ Makes light effect task creation more readable and concise """
 
