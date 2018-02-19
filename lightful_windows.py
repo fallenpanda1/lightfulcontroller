@@ -69,7 +69,8 @@ class VirtualNeopixelWindow(window.Window):
 
     def on_draw(self):
         now = time.time()
-        if now >= self.time_to_draw_next_frame:
+        # stop limiting to 60 fps?
+        if True or now >= self.time_to_draw_next_frame:
             self.clear()
             self.batch.draw()
             fps = 60
