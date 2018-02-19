@@ -1,6 +1,7 @@
 import logging
 
 import rtmidi
+from pymaybe import maybe
 
 logger = logging.getLogger("global")
 
@@ -12,6 +13,12 @@ class MidiMonitor:
         self.__observers = []
         self.__midi_in = rtmidi.RtMidiIn()
         self.__is_sustain_pedal_active = False
+
+        # track active notes (notes waiting on 'off' message) so
+        # the monitor can support turning them off without waiting
+        # for the 'off' message
+        # TODO: I'm not sure MidiMonitor should be handling this...
+        self.__active_notes_by_channel = {}
 
     def start(self):
         ports = range(self.__midi_in.getPortCount())
@@ -72,6 +79,8 @@ class MidiMonitor:
             self.__is_sustain_pedal_active = is_active
             rtmidi_message = rtmidi.MidiMessage.controllerEvent(rtmidi_message.getChannel(), 64, 127 if is_active else 0)
 
+        self._track_note(rtmidi_message)
+
         for observer in self.__observers:
             observer.received_midi(rtmidi_message)
 
@@ -85,3 +94,31 @@ class MidiMonitor:
         """ Unregister an observer """
         if observer in self.__observers:
             self.__observers.remove(observer)
+
+    def end_all_notes(self, channel):
+        """End all active notes on a given channel"""
+        for pitch in self.__active_notes_by_channel.get(channel, []).copy():
+            message = rtmidi.MidiMessage().noteOff(channel, pitch)
+            self.handle_midi_message(message)
+
+        # TODO: we could also suppress off messages for notes
+        # no longer in the active notes list for cleanliness's sake.
+        self.__active_notes_by_channel[channel] = set()
+
+    def _track_note(self, rtmidi_message):
+        """Track notes' off/on state"""
+        m = rtmidi_message
+        if not m.isNoteOn() and not m.isNoteOff():
+            return
+
+        channel = m.getChannel()
+        pitch = m.getNoteNumber()
+        pitches = self.__active_notes_by_channel.get(channel, None)
+        if not pitches:
+            pitches = set()
+            self.__active_notes_by_channel[channel] = pitches
+
+        if m.isNoteOn():
+            pitches.add(pitch)
+        else:
+            pitches.discard(pitch)
