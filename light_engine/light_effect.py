@@ -95,7 +95,8 @@ class SolidColor(LightEffect):
         self.color = color
 
     def get_color(self, progress, gradient):
-        return self.color.with_alpha(max(0, 1 - progress))
+        base_alpha = self.color.a() * 1.0 / 255
+        return self.color.with_alpha(max(0, (1 - progress) * base_alpha))
 
 
 class Gradient(LightEffect):
