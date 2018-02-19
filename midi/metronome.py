@@ -54,7 +54,7 @@ class MetronomeTask(Task, TimeKeeper):
         self.current_tick = current_tick
 
         if current_tick % self.ticks_per_beat == 0:
-            logger.info("playing")
+            # logger.info("playing")
             self._play_beat()
 
     def __ticks_per_measure(self):
