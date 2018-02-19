@@ -17,11 +17,12 @@ class MidiRecorder:
     """ Records incoming MIDI """
 
     def __init__(self, file_name, midi_monitor, tempo=DEFAULT_TEMPO,
-                 ticks_per_beat=DEFAULT_TICKS_PER_BEAT):
+                 ticks_per_beat=DEFAULT_TICKS_PER_BEAT, channel=None):
         self.file_name = file_name
         self.__midi_monitor = midi_monitor
         self.tempo = tempo
         self.ticks_per_beat = ticks_per_beat
+        self.channel = channel
         self.__midi_file = mido.MidiFile(ticks_per_beat=self.ticks_per_beat)
 
         # add track
@@ -56,13 +57,17 @@ class MidiRecorder:
         self.__last_message_time = None
 
     def received_midi(self, rtmidi_message):
+        if self.channel is not None and \
+           self.channel != rtmidi_message.getChannel():
+            return
+
         if not is_recognized_rtmidi_message(rtmidi_message):
             logger.error("received an unknown midi message")
             return
 
         if (rtmidi_message.isController() and
                 rtmidi_message.getControllerNumber() == 64):
-            # taken from
+            # values taken from
             # https://www.cs.cmu.edu/~music/cmsip/readings/Standard-MIDI-file-format-updated.pdf
             is_pedal_on = rtmidi_message.getControllerValue() >= 64
             if self.__last_saved_is_pedal_on == is_pedal_on:

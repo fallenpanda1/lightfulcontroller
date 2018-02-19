@@ -29,6 +29,7 @@ class LightfulKeyboardShortcuts:
         self.midi_scheduler = midi_scheduler
 
         self.midi_recorder = None
+        self.looper_midi_recorders = None
         self.midi_looper = None
 
     def register_shortcuts(self):
@@ -64,7 +65,7 @@ class LightfulKeyboardShortcuts:
                             self.toggle_channel_7)
         l.register_callback('r', "(r)ecord MIDI input to a save file, or "
                                "if a file is recording, then save recording",
-                               self.toggle_record_midi_file)
+                               self.toggle_looper_record_midi_file)
         l.register_callback('q', "(q)uit (back to previous menu)", self.quit_loop_mode)
         
         k.register_callback('b', "(b)eep (local speakers)",
@@ -152,6 +153,26 @@ class LightfulKeyboardShortcuts:
         else:
             self.midi_recorder.stop()  # TODO: maybe fork into cancel vs save?
             self.midi_recorder = None
+
+    def toggle_looper_record_midi_file(self):
+        """record midi input for the looper (generates .midi recordings for each
+        of 4 channels)"""
+        if self.looper_midi_recorders is None:
+            self.looper_midi_recorders = {}
+
+            for channel in range(1, 5):
+                recorder = MidiRecorder(
+                    "looper_channel_{}.mid".format(channel),
+                    self.midi_monitor,
+                    channel=channel
+                )
+                recorder.start()
+                self.looper_midi_recorders[channel] = recorder
+        else:
+            for _, recorder in self.looper_midi_recorders.items():
+                recorder.stop()
+            self.looper_midi_recorders = None
+
 
     def play_recorded_midi_file(self):
         """ play recorded midi file """
