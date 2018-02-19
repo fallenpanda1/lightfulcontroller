@@ -11,9 +11,13 @@ from light_engine.light_effect import SolidColor
 logger = logging.getLogger("global")
 
 # background is a blue/green animating gradient
-BLUE_BG = make_color(0, 35, 50)
-GREEN_BG = make_color(0, 60, 30)
+BLUE_BG = make_color(0, 0, 70)
+GREEN_BG = make_color(0, 0, 70)
 YELLOW = make_color(220, 200, 60)
+ORANGE = make_color(220, 140, 60)
+ORANGE_RED = make_color(220, 100, 60, 90)  # reminder: alpha is set
+RED = make_color(220, 50, 60, 70)
+PURPLE = make_color(130, 20, 180, 127)
 
 
 class SomethingJustLikeThisShow:
@@ -24,77 +28,98 @@ class SomethingJustLikeThisShow:
         self.__pixel_adapter = pixel_adapter
         self.__midi_monitor = midi_monitor
         self.__midi_monitor.register(self)
+
         self.lightfactory = LightEffectTaskFactory(self.__pixel_adapter,
             self.__midi_monitor)
-        # TODO: this is exactly the kind of thing I don't want to have to do
-        # for each song!!
-        self.__is_in_end_mode = False
 
         self.row1 = LightSection(range(10, 30))
         self.row2 = LightSection(reversed(range(30, 50)))
         self.row3 = LightSection(range(60, 80))
         self.row4 = LightSection(reversed(range(80, 100)))
 
+        self.all = LightSection.merge_all(
+            [self.row1, self.row2, self.row3, self.row4])
+
         # mapping between note and light animations
         self.note_map = {}
 
-        # channel 1 map
+        # channel 1 high map (for main melody)
         channel = 1
         pitches_to_lights = space_notes_out_into_section(
-            pitches=range(36, 70),
-            lightsection=self.row1
+            pitches=filter_out_non_C_notes(range(58, 92)),
+            lightsection=self.row4
         )
         for pitch, light_position in pitches_to_lights.items():
             self.note_map[(pitch, channel)] = self.lightfactory.note_off_task(
                 effect=SolidColor(color=YELLOW),
-                section=LightSection([light_position]),
-                duration=0.6,
+                section=LightSection(range(light_position, light_position+2)),
+                duration=0.15,
                 pitch=pitch
             )
 
-        # channel 2 map
-        channel = 2
+        # channel 1 low map (for last few measures where channel 1
+        # substitutes the base in channel 2)
+        channel = 1
         pitches_to_lights = space_notes_out_into_section(
-            pitches=range(36, 70),
-            lightsection=self.row2
-        )
-        for pitch, light_position in pitches_to_lights.items():
-            self.note_map[(pitch, channel)] = self.lightfactory.note_off_task(
-                effect=SolidColor(color=YELLOW),
-                section=LightSection([light_position]),
-                duration=0.6,
-                pitch=pitch
-            )
-
-        # channel 3 map
-        channel = 3
-        pitches_to_lights = space_notes_out_into_section(
-            pitches=range(36, 70),
-            lightsection=self.row3
-        )
-        for pitch, light_position in pitches_to_lights.items():
-            self.note_map[(pitch, channel)] = self.lightfactory.note_off_task(
-                effect=SolidColor(color=YELLOW),
-                section=LightSection([light_position]),
-                duration=0.6,
-                pitch=pitch
-            )
-
-        # channel 4 map
-        channel = 4
-        pitches_to_lights = space_notes_out_into_section(
-            pitches=range(36, 70),
+            pitches=filter_out_non_C_notes(range(36, 50)),
             lightsection=self.row4
         )
         for pitch, light_position in pitches_to_lights.items():
             self.note_map[(pitch, channel)] = self.lightfactory.note_off_task(
                 effect=SolidColor(color=YELLOW),
                 section=LightSection([light_position]),
-                duration=0.6,
+                duration=0,
                 pitch=pitch
             )
 
+        # channel 2 map
+        channel = 2
+        pitches_to_lights = space_notes_out_into_section(
+            pitches=filter_out_non_C_notes(range(24, 48)),
+            lightsection=self.row1
+        )
+        for pitch, light_position in pitches_to_lights.items():
+            self.note_map[(pitch, channel)] = self.lightfactory.task(
+                effect=Meteor(color=PURPLE),
+                section=self.row1.reversed(),
+                duration=1.2,
+            )
+
+        # channel 3 map
+        channel = 3
+        pitches_to_lights = space_notes_out_into_section(
+            pitches=filter_out_non_C_notes(range(36, 66)),
+            lightsection=self.row2
+        )
+        for pitch, light_position in pitches_to_lights.items():
+            self.note_map[(pitch, channel)] = self.lightfactory.task(
+                effect=SolidColor(color=RED),
+                section=LightSection(range(
+                    light_position-2,
+                    light_position+1+1)
+                ),
+                duration=0.5,
+            )
+
+        # channel 4 map
+        channel = 4
+        pitches_to_lights = space_notes_out_into_section(
+            pitches=filter_out_non_C_notes(range(48, 80)),
+            lightsection=self.row3
+        )
+        for pitch, light_position in pitches_to_lights.items():
+            self.note_map[(pitch, channel)] = self.lightfactory.task(
+                effect=SolidColor(color=ORANGE_RED),
+                section=LightSection(range(
+                    light_position-2,
+                    light_position+2+1)
+                ),
+                duration=0.5
+            )
+
         self.initialize_lights()
+
+        self.looper = None
 
     def initialize_lights(self):
         # add base layer for scheduler
@@ -150,10 +175,21 @@ class SomethingJustLikeThisShow:
     def received_midi(self, rtmidi_message):
         if rtmidi_message.isNoteOn():
             channel = rtmidi_message.getChannel()
+
+            # if a channel is recording, pretend MIDI is coming
+            # from that channel instead of the usual channel 1
+            if channel == 1 and self.looper is not None:
+                for recording_channel in range(2, 10):
+                    if self.looper.is_recording(recording_channel):
+                        channel = recording_channel
+                        break
+
             pitch = rtmidi_message.getNoteNumber()
             if (pitch, channel) in self.note_map:
                 task = copy.copy(self.note_map[(pitch, channel)])
-                self.__scheduler.add(task, unique_tag=(pitch, channel))
+                # only dedupe channel 1
+                unique_tag = (pitch, channel) if channel == 1 else None
+                self.__scheduler.add(task, unique_tag=unique_tag)
 
 
 def space_notes_out_into_section(pitches, lightsection):
