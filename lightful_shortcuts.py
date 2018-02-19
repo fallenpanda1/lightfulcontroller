@@ -3,7 +3,6 @@ import time
 from threading import Timer
 
 import rtmidi
-from pymaybe import maybe
 
 from midi.editor import MidiEditor
 from midi.editor import RangeVelocityFilter
@@ -85,6 +84,10 @@ class LightfulKeyboardShortcuts:
         )
         self.midi_looper.start()
 
+        # hackily pass this into the light show (which really shouldn't
+        # need the midi looper, but oh well for now)
+        self.lights_show.looper = self.midi_looper
+
     def quit_loop_mode(self):
         self.end_loop_mode()
         self.keyboard_monitor.remove_nested_monitor()
@@ -114,17 +117,17 @@ class LightfulKeyboardShortcuts:
     def toggle_loop(self, channel):
         looper = self.midi_looper
         if not looper.has_been_recorded(channel):
-            logger.info("A")
+            logger.info("channel {} recording".format(channel))
             looper.record(time.time(), channel)
             looper.play(channel)
         elif looper.is_recording(channel):
-            logger.info("B")
+            logger.info("channel {} playing".format(channel))
             looper.save_record(channel)
         elif looper.is_playing(channel):
-            logger.info("C")
+            logger.info("channel {} paused".format(channel))
             looper.pause(channel)  # TODO: this is more of a mute than a pause
         elif not looper.is_playing(channel):
-            logger.info("D")
+            logger.info("channel {} playing".format(channel))
             looper.play(channel)
 
     def shortcuts_description(self):
@@ -193,7 +196,7 @@ class LightfulKeyboardShortcuts:
         """Note on event, then after a delay, note off event"""
         self.send_note_on_event(pitch, channel)
 
-        Timer(0.2, self.send_note_off_event, [pitch, channel]).start()
+        Timer(0.4, self.send_note_off_event, [pitch, channel]).start()
 
     def send_note_on_event(self, pitch, channel):
         note_on = rtmidi.MidiMessage().noteOn(channel, pitch, 100)
