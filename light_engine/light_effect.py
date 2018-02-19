@@ -165,7 +165,7 @@ class LightEffectTaskFactory:
     def task(self, effect, section, duration):
         return LightEffectTask(effect, section, duration, self.__pixel_adapter)
 
-    def repeating_task(self, effect, section, duration, progress_offset):
+    def repeating_task(self, effect, section, duration, progress_offset=0):
         """ Creates an auto-repeating LightEffectTask """
         task = self.task(effect, section, duration)
         return RepeatingTask(task, duration, progress_offset)
