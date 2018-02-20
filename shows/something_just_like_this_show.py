@@ -18,7 +18,7 @@ GREEN_BG = make_color(0, 0, 70)
 YELLOW = make_color(220, 200, 60)
 ORANGE = make_color(220, 140, 60)
 ORANGE_RED = make_color(220, 100, 60, 90)  # reminder: alpha is set
-RED = make_color(220, 50, 60, 70)
+RED = make_color(220, 50, 60)
 PURPLE = make_color(130, 20, 180, 127)
 
 
@@ -95,7 +95,7 @@ class SomethingJustLikeThisShow:
         )
         for pitch, light_position in pitches_to_lights.items():
             self.note_map[(pitch, channel)] = self.lightfactory.task(
-                effect=SolidColor(color=RED),
+                effect=SolidColor(color=RED.with_alpha(0.3)),
                 section=LightSection(range(
                     light_position-2,
                     light_position+1+1)
@@ -139,20 +139,24 @@ class SomethingJustLikeThisShow:
 
     def add_looper_metronome_animation(self):
         # visual time keeping
+        self.last_saved_progress = 0
+        self.sub_measures = 4
         threshold = 0.05
         def get_color_by_time(progress, gradient):
             # each metronome 'measure' loop is actually two 4 beat measures,
             # so we want to loop twice per measure
-            progress = progress * 2 % 1
+            progress = progress * self.sub_measures % 1
+            self.last_saved_progress = progress
 
+            # ??? make progress sliiightly behind for aesthetics ??
+            # progress = max(0, progress)
             delta = abs(progress - gradient)
+
             if delta < threshold:
-                return YELLOW.with_alpha(1 - delta / threshold)
+                return YELLOW.with_alpha((1 - delta / threshold) * 0.8)
             else:
                 return YELLOW.with_alpha(0)
 
-
-        self.is_note_active = False
         task = self.lightfactory.task(
             effect=Functional(func=get_color_by_time),
             section=self.all.reversed(),
@@ -163,6 +167,12 @@ class SomethingJustLikeThisShow:
             metronome=self.looper.metronome
         )
         self.__scheduler.add(metronome_synced)
+
+    def last_saved_light_column_position(self):
+        position = round(self.last_saved_progress * 20)
+        if position == 20:
+            position = 0
+        return position
 
     def initialize_lights(self):
         # add base layer for scheduler
@@ -233,6 +243,24 @@ class SomethingJustLikeThisShow:
                 # only dedupe channel 1
                 unique_tag = (pitch, channel) if channel == 1 else None
                 self.__scheduler.add(task, unique_tag=unique_tag)
+
+            # EXPERIMENTAL STUFF
+            section = None
+            if channel == 2:
+                section = self.row1
+            elif channel == 3:
+                section = self.row2
+            elif channel == 4:
+                section = self.row3
+            elif channel == 1:
+                section = self.row4
+            position = section.positions[19 - self.last_saved_light_column_position()]
+            task = self.lightfactory.task(
+                effect=SolidColor(color=YELLOW),
+                section=LightSection([position]),
+                duration=self.looper.metronome.seconds_per_measure() / self.sub_measures
+            )
+            self.__scheduler.add(task)
 
 
 def space_notes_out_into_section(pitches, lightsection):
