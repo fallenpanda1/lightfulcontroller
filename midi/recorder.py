@@ -75,7 +75,7 @@ class MidiRecorder:
                 return
             self.__last_saved_is_pedal_on = is_pedal_on
 
-        logger.info("Recorder received msg: " + str(rtmidi_message))
+        # logger.info("Recorder received msg: " + str(rtmidi_message))
 
         now = time()
         tick_delta = convert_to_ticks(now - self.__last_message_time,
