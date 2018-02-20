@@ -17,9 +17,9 @@ BLUE_BG = make_color(0, 0, 70)
 GREEN_BG = make_color(0, 0, 70)
 YELLOW = make_color(220, 200, 60)
 ORANGE = make_color(220, 140, 60)
-ORANGE_RED = make_color(220, 100, 60, 90)  # reminder: alpha is set
-RED = make_color(220, 50, 60)
-PURPLE = make_color(130, 20, 180, 127)
+ORANGE_RED = make_color(220, 100, 60)  # reminder: alpha is set
+RED = make_color(160, 40, 40)
+PURPLE = make_color(150, 20, 140, 127)
 
 
 class SomethingJustLikeThisShow:
@@ -41,6 +41,15 @@ class SomethingJustLikeThisShow:
 
         self.all = LightSection.merge_all(
             [self.row1, self.row2, self.row3, self.row4])
+
+        self.row1_16 = LightSection(self.row1.positions[2: -2])
+        self.row2_16 = LightSection(self.row2.positions[2: -2])
+        self.row3_16 = LightSection(self.row3.positions[2: -2])
+        self.row4_16 = LightSection(self.row4.positions[2: -2])
+
+        self.all_16 = LightSection.merge_all(
+            [self.row1_16, self.row2_16, self.row3_16, self.row4_16]
+        )
 
         # mapping between note and light animations
         self.note_map = {}
@@ -70,7 +79,7 @@ class SomethingJustLikeThisShow:
             self.note_map[(pitch, channel)] = self.lightfactory.note_off_task(
                 effect=SolidColor(color=YELLOW),
                 section=LightSection([light_position]),
-                duration=0,
+                duration=0.15,
                 pitch=pitch
             )
 
@@ -111,7 +120,7 @@ class SomethingJustLikeThisShow:
         )
         for pitch, light_position in pitches_to_lights.items():
             self.note_map[(pitch, channel)] = self.lightfactory.task(
-                effect=SolidColor(color=ORANGE_RED),
+                effect=SolidColor(color=ORANGE_RED.with_alpha(0.35)),
                 section=LightSection(range(
                     light_position-2,
                     light_position+2+1)
@@ -140,7 +149,7 @@ class SomethingJustLikeThisShow:
     def add_looper_metronome_animation(self):
         # visual time keeping
         self.last_saved_progress = 0
-        self.sub_measures = 4
+        self.sub_measures = 2
         threshold = 0.05
         def get_color_by_time(progress, gradient):
             # each metronome 'measure' loop is actually two 4 beat measures,
@@ -153,13 +162,13 @@ class SomethingJustLikeThisShow:
             delta = abs(progress - gradient)
 
             if delta < threshold:
-                return YELLOW.with_alpha((1 - delta / threshold) * 0.8)
+                return YELLOW.with_alpha((1 - delta / threshold) * 0.6)
             else:
                 return YELLOW.with_alpha(0)
 
         task = self.lightfactory.task(
             effect=Functional(func=get_color_by_time),
-            section=self.all.reversed(),
+            section=self.all_16.reversed(),
             duration=self.looper.metronome.seconds_per_measure()
         )
         metronome_synced = MetronomeSyncedTask(
@@ -169,8 +178,9 @@ class SomethingJustLikeThisShow:
         self.__scheduler.add(metronome_synced)
 
     def last_saved_light_column_position(self):
-        position = round(self.last_saved_progress * 20)
-        if position == 20:
+        num_pixels = self.num_metronome_pixels
+        position = round(self.last_saved_progress * num_pixels)
+        if position == num_pixels:
             position = 0
         return position
 
@@ -228,6 +238,7 @@ class SomethingJustLikeThisShow:
     def received_midi(self, rtmidi_message):
         if rtmidi_message.isNoteOn():
             channel = rtmidi_message.getChannel()
+            original_channel = channel
 
             # if a channel is recording, pretend MIDI is coming
             # from that channel instead of the usual channel 1
@@ -237,28 +248,30 @@ class SomethingJustLikeThisShow:
                         channel = recording_channel
                         break
 
-            pitch = rtmidi_message.getNoteNumber()
-            if (pitch, channel) in self.note_map:
-                task = copy.copy(self.note_map[(pitch, channel)])
-                # only dedupe channel 1
-                unique_tag = (pitch, channel) if channel == 1 else None
-                self.__scheduler.add(task, unique_tag=unique_tag)
+            # pitch = rtmidi_message.getNoteNumber()
+            # if (pitch, channel) in self.note_map:
+            #     task = copy.copy(self.note_map[(pitch, channel)])
+            #     # only dedupe channel 1
+            #     unique_tag = (pitch, channel) if channel == 1 else None
+            #     self.__scheduler.add(task, unique_tag=unique_tag)
 
             # EXPERIMENTAL STUFF
             section = None
+            self.num_metronome_pixels = 16
             if channel == 2:
                 section = self.row1
             elif channel == 3:
-                section = self.row2
+                section = self.row4  # least important channel
             elif channel == 4:
                 section = self.row3
             elif channel == 1:
-                section = self.row4
-            position = section.positions[19 - self.last_saved_light_column_position()]
+                section = self.row2
+            position = section.positions[self.num_metronome_pixels + 1 - self.last_saved_light_column_position()]
+            color = RED.with_alpha(0.9) if original_channel == 1 else PURPLE.with_alpha(0.6)
             task = self.lightfactory.task(
-                effect=SolidColor(color=YELLOW),
+                effect=SolidColor(color=color),
                 section=LightSection([position]),
-                duration=self.looper.metronome.seconds_per_measure() / self.sub_measures
+                duration=self.looper.metronome.seconds_per_measure() / self.sub_measures * 0.6
             )
             self.__scheduler.add(task)
 
