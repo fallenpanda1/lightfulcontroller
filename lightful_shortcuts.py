@@ -90,6 +90,8 @@ class LightfulKeyboardShortcuts:
         self.lights_show.looper = self.midi_looper
 
     def quit_loop_mode(self):
+        if self.looper_midi_recorders is not None:
+            self.toggle_looper_record_midi_file()
         self.end_loop_mode()
         self.keyboard_monitor.remove_nested_monitor()
 
